@@ -61,7 +61,15 @@ public class BaselineClassifier implements Classifier {
 
 	Classifier c = new BaselineClassifier(d);
 
-	d.printTestPredictions(c, filestem);
+        int correct = 0;
+        for (int i = 0; i < d.numTrainExs; i++) {
+            if (c.predict(d.trainEx[i]) == d.trainLabel[i])
+                correct++;
+        }
+
+        System.out.println((100*correct/d.numTrainExs) + "%");
+
+	//d.printTestPredictions(c, filestem);
     }
 
 }
