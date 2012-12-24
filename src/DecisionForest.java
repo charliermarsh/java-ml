@@ -6,6 +6,8 @@
 import java.io.*;
 import java.util.Random;
 import java.util.Vector;
+import java.util.HashSet;
+import java.util.Collections;
 public class DecisionForest implements Classifier{
 
     Random random;
@@ -15,28 +17,42 @@ public class DecisionForest implements Classifier{
         random = new Random();
 
         forest = new DecisionTree[forestSize];
-        
-        int[] attributes = new int[data.numAttrs];
-        for (int i = 0; i < data.numAttrs; i++) { attributes[i] = i; }
+
+        /*
+         * This is basically a nonsensical way of choosing attributes/examples
+         * to train each tree on.  Can't really find much on optimal values.
+         * Want to make sure the tree works before tweaking, though.
+         *
+         * Picks a random number of attributes/examples to train each tree.
+         */
+        Vector<Integer> attributes = new Vector<Integer>(data.numAttrs);
+        Vector<Integer> examples = new Vector<Integer>(data.numTrainExs);
+        for (int i = 0; i < data.numAttrs; i++) { attributes.add(i); }
+        for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
 
         for (int cTree = 0; cTree < forestSize; cTree++) {
 
             /* Need to decide how to select number of features*/
-            int numFeatures = random.nextInt(data.numAttrs / 2) + 1;
-            Vector<Integer> treeAttributes = new Vector<Integer>(numFeatures);
-        
-            for (int i = 1; i <= numFeatures; i++) {
-                //Basically do a partial knuth shuffle to get random attributes
-                int index = random.nextInt(data.numAttrs - i);
-                int value = attributes[index];
-                attributes[index] = attributes[data.numAttrs - i];
-                attributes[data.numAttrs - i] = value;
+            int numFeatures = random.nextInt(data.numAttrs - 1) + 1;
+            int numTrain = random.nextInt(data.numTrainExs);
+            HashSet<Integer> treeAttributes = new HashSet<Integer>(numFeatures);
+            Vector<Integer> treeExamples = new Vector<Integer>(numTrain);
 
-                treeAttributes.add(value);
-                //System.out.print(value + " ");
+            //Randomize the list
+            Collections.shuffle(attributes);
+            for (int i = 0; i < numFeatures; i++) {
+                treeAttributes.add(attributes.get(i));
             }
-                //System.out.println();
-                forest[cTree] = new DecisionTree(data, treeAttributes);
+
+            Collections.shuffle(examples);
+            for (int i = 0; i < numTrain; i++) {
+                treeExamples.add(examples.get(i));
+            }
+
+            //System.out.println(numFeatures + ":" + numTrain);
+            //forest[cTree] = new DecisionTree(data, treeAttributes,
+            //treeExamples);
+            forest[cTree] = new DecisionTree(data, treeAttributes);
         }
     }
 
@@ -45,7 +61,7 @@ public class DecisionForest implements Classifier{
      */
     public int predict(int[] ex) {
         int[] count = new int[2];
-        for (DecisionTree tree: forest)
+        for (DecisionTree tree : forest)
             count[tree.predict(ex)]++;
         return (count[1] > count[0] ? 1 : 0);
     }
@@ -81,20 +97,49 @@ public class DecisionForest implements Classifier{
 
         String filestem = argv[0];
 
+        /*
+         * Create a cross validation set - just takes the last crossSize
+         * elements of the set as a cross set.
+         */
         BinaryDataSet d = new BinaryDataSet(filestem);
+
+        int crossSize = d.numTrainExs/4;
+
+        int[][] crossEx = new int[crossSize][];
+        int[] crossLabel = new int[crossSize];
+
+        int[][] dEx = new int[d.numTrainExs - crossSize][];
+        int[] dLabel = new int[d.numTrainExs - crossSize];
+
+        for (int i = 0; i < d.numTrainExs - crossSize; i++) {
+            dEx[i] = d.trainEx[i];
+            dLabel[i] = d.trainLabel[i];
+        }
+
+        for (int i = 0; i < crossSize; i++) {
+            crossEx[i] = d.trainEx[d.numTrainExs - i - 1];
+            crossLabel[i] = d.trainLabel[d.numTrainExs - i - 1];
+        }
+
+        //Modify original dataset
+        d.numTrainExs = dEx.length;
+        d.trainEx = dEx;
+        d.trainLabel = dLabel;
+
+        System.out.println("Training classifier on " + d.numTrainExs
+                + " examples");
 
         Classifier c = new DecisionForest(d,Integer.parseInt(argv[1]));
 
+        System.out.println("Testing classifier on " + crossEx.length
+                + " examples");
         int correct = 0;
-        for (int i = 0; i < d.numTrainExs; i++) {
-            if (c.predict(d.trainEx[i]) == d.trainLabel[i])
+        for (int ex = 0; ex < crossEx.length; ex++) {
+            if (c.predict(crossEx[ex]) == crossLabel[ex])
                 correct++;
         }
-
-        System.out.println((100*correct/d.numTrainExs) + "%");
-
-        //d.printTestPredictions(c, System.out);
-        //d.printTestPredictions(c, filestem);
+        System.out.println("Performance on cross set: "
+                + (100*correct / crossEx.length) + "%");
     }
 
 }
