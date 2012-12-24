@@ -45,8 +45,8 @@ public class DecisionTree implements Classifier{
 
             if (examples.size() == 0) {
                 this.attribute = -1;
-                this.label = 0; //To avoid crashes, although
-                return;         //Parent must set the label on this node
+                this.label = 0; //To avoid crashes, although parent must set
+                return;         //      the label on this node
             }
 
             /*
@@ -77,12 +77,17 @@ public class DecisionTree implements Classifier{
 
             /* 
              * Pick the most important attribute - want to get the best one to
-             * split on - see R&N 18.3.4 on page 703
+             * split on - see R&N 18.3.4 on page 703.  Trying to minimize
+             * Remainder(A) since B(.) will remain the same for every
+             * attribute.
              *
              * Calculates max gain - for a better explanation, see
              * http://dms.irb.hr/tutorial/tut_dtrees.php
              */
-            double maxGain = 0;
+            double bestGain = 0;
+            double minG, maxG;
+            minG = 0;
+            maxG = 0;
             double zeroGain, oneGain;
             for (int attr : attributes) {
                 /*
@@ -103,32 +108,43 @@ public class DecisionTree implements Classifier{
                 for (int i = 0; i <= 1; i++) {
                     double total = counts[i][0] + counts[i][1];
                     double weight = total / examples.size();
+                    double zeroEntropy = 0;
+                    double oneEntropy = 0;
                     if (total > 0) {
-                        double zeroEntropy = (counts[i][0] / total)
-                            * Math.log(counts[i][0] / total) / Math.log(2);
-                        double oneEntropy = (counts[i][1] / total)
-                            * Math.log(counts[i][1] / total) / Math.log(2);
-                        gain += weight * zeroEntropy * oneEntropy;
+                        if (counts[i][0] > 0) {
+                            zeroEntropy = (counts[i][0] / total)
+                                * Math.log(counts[i][0] / total) / Math.log(2);
+                        }
+                        if (counts[i][1] > 0) {
+                            oneEntropy = (counts[i][1] / total)
+                                * Math.log(counts[i][1] / total) / Math.log(2);
+                        }
+                        gain += weight * (zeroEntropy + oneEntropy);
+                        /*
+                         *System.out.println(examples.size() + "\t"
+                         *        + counts[i][0] + "\t" + counts[i][1] + "\t"
+                         *        + gain);
+                         */
                     }
                 }
-
-                if (gain >= maxGain) {
-                    //System.out.println(gain);
-                    maxGain = gain;
+                minG = Math.min(minG, gain);
+                maxG = Math.max(maxG, gain);
+                if (gain <= bestGain) {
+                    bestGain = gain;
                     this.attribute = attr;
                 }
             }
-            //System.out.println(maxGain);
+            //System.out.println(minG + ":" + maxG);
 
             /*
              * None of the splits do anything - Just take the majority
              * avoids stack overflow from depth - perhaps not ideal?
              */
-            if (maxGain == 0) {
-                this.attribute = -1;
-                this.label = majority;
-                return;
-            }
+            //if (bestGain == 0) {
+                //this.attribute = -1;
+                //this.label = majority;
+                //return;
+            //}
 
             //Remove the attribute so it cannot be used again in child branches
             //Add it back in before returning
@@ -253,6 +269,22 @@ public class DecisionTree implements Classifier{
          */
         BinaryDataSet d = new BinaryDataSet(filestem);
 
+        /*
+         * Do the Knuth Shuffle!  It sounds like more fun than it is!
+         */
+        //Set seed to constant to get the same result multiple times
+        Random random = new Random(10);
+        for (int i = 0; i < d.numTrainExs; i++) {
+            int swap = random.nextInt(d.numTrainExs - i);
+            int[] tempEx = d.trainEx[swap];
+            d.trainEx[swap] = d.trainEx[d.numTrainExs - i - 1];
+            d.trainEx[d.numTrainExs - i - 1] = tempEx;
+            int tempLabel = d.trainLabel[swap];
+            d.trainLabel[swap] = d.trainLabel[d.numTrainExs - i - 1];
+            d.trainLabel[d.numTrainExs - i - 1] = tempLabel;
+        }
+
+        //What proportion of the dataset to use for testing
         int crossSize = d.numTrainExs/4;
 
         int[][] crossEx = new int[crossSize][];
