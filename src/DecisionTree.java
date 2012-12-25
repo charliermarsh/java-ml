@@ -149,7 +149,8 @@ public class DecisionTree implements Classifier{
             /*
              * Split examples based on the chosen attribute
              */
-            for (int i = 0; i < examples.size(); i++) {
+            //for (int i = 0; i < examples.size(); i++) {
+            for (int i : examples) {
                 if (data.trainEx[i][this.attribute] == 0) {
                     zeroExamples.add(i);
                 } else {
