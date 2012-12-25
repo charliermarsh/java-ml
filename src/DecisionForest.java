@@ -13,7 +13,7 @@ public class DecisionForest implements Classifier{
     Random random;
     DecisionTree[] forest;
 
-    public DecisionForest(DiscreteDataSet data, int forestSize) {
+    public DecisionForest(DataSet data, int forestSize) {
         random = new Random();
 
         forest = new DecisionTree[forestSize];
@@ -30,13 +30,16 @@ public class DecisionForest implements Classifier{
         for (int i = 0; i < data.numAttrs; i++) { attributes.add(i); }
         for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
 
-
+        //Train each tree by choosing a subset of features = to sqrt of number
+        //of features
         int numFeatures = (int)Math.sqrt(data.numAttrs);
-        //int numTrain = 2 * data.numTrainExs / 3;
-        int numTrain = data.numTrainExs;
+        //int numFeatures = (int)(Math.log(data.numAttrs)/Math.log(2));
+        
+        //Train each tree on a sample of 2/3 of the examples
+        int numTrain = 2 * data.numTrainExs / 3;
 
-        System.out.println("Building trees with a sample of " + numFeatures
-                + " attributes and " + numTrain + " examples each.");
+        //System.out.println("Building trees with a sample of " + numFeatures
+        //        + " attributes and " + numTrain + " examples each.");
 
         for (int cTree = 0; cTree < forestSize; cTree++) {
 

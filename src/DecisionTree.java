@@ -36,7 +36,7 @@ public class DecisionTree implements Classifier{
                 return 0.0;
             return -1.0
                 * ( ((n/(n+p)) * Math.log(n/(n+p)))
-                      + ( (p/(n+p)) * Math.log(p/(n+p)))) / Math.log(2);
+                        + ( (p/(n+p)) * Math.log(p/(n+p)))) / Math.log(2);
         }
 
         /* 
@@ -49,18 +49,26 @@ public class DecisionTree implements Classifier{
          * http://dms.irb.hr/tutorial/tut_dtrees.php
          * http://decisiontrees.net/decision-trees-tutorial/tutorial-4-id3/
          */
-        int chooseAttribute(DiscreteDataSet data,  HashSet<Integer> attributes,
+        int chooseAttribute(DataSet data,  HashSet<Integer> attributes,
                 ArrayList<Integer> examples) {
             int bestAttr = -1;
-            double bestGain = 0;
+            double bestGain = -1;
+            int[] labelCount = new int[2];
+            for (int ex : examples) {
+                //Yay array index beauty...
+                labelCount[data.trainLabel[ex]]++;
+            }
+            double setEntropy = entropy(labelCount[0], labelCount[1]);
             for (int attr : attributes) {
+                //Set to something in the case that there is no gain
+                //if (bestAttr == -1) { bestAttr = attr; }
                 /*
                  * [value][label] : so [0][0] + [0][1] would be the number of
                  * examples with a value of 0 for the attributes.
                  * [0][1] + [1][1] would be number of examples with label 1 in
                  * examples.  Use this to calculate entropy and gain.
                  */
-                double[][] count = new double[2][2];
+                double[][] count = new double[data.attrVals[attr].length][2];
                 for (int ex : examples) {
                     //Yay array index beauty...
                     count[data.trainEx[ex][attr]][data.trainLabel[ex]]++;
@@ -70,23 +78,21 @@ public class DecisionTree implements Classifier{
                 //(recalculates current entropy every time)
                 //double gain = entropy(count[0][0] + count[1][0], count[0][1]
                         //+ count[1][1]);
-                double gain = 1.0;
-                double zeroEntropy = (count[0][0] + count[0][1])
-                                        / examples.size();
-                zeroEntropy *= entropy(count[0][0], count[0][1]);
+                double gain = setEntropy;
+                for (int val = 0; val < data.attrVals[attr].length; val++) {
+                    //Get number of examples with this attribute value
+                    gain -= ((count[val][0] + count[val][1]) / examples.size())
+                                * entropy(count[val][0], count[val][1]);
+                }
 
-                double oneEntropy = (count[1][0] + count[1][1])
-                                        / examples.size();
-                oneEntropy *= entropy(count[1][0], count[1][1]);
-
-                gain -= zeroEntropy + oneEntropy;
                 if (gain >= bestGain) {
                     bestAttr = attr;
                     bestGain = gain;
                 }
                 //System.out.println(gain);
             }
-            //System.out.println(bestGain + "\n\n\n");
+            //System.out.println(bestAttr + "\t" + bestGain + "\t" + setEntropy
+                    //+ "\t" + attributes.size());
             return bestAttr;
         }
 
@@ -97,7 +103,7 @@ public class DecisionTree implements Classifier{
          * way.  attributes is a set of all remaining attributes to split on.
          * This is modified and passed to children by each node.
          */
-        Node(DiscreteDataSet data,  HashSet<Integer> attributes,
+        Node(DataSet data,  HashSet<Integer> attributes,
                 ArrayList<Integer> examples) {
 
             this.label = -1;
@@ -145,9 +151,12 @@ public class DecisionTree implements Classifier{
             ArrayList<ArrayList<Integer>> childExamples = new
                 ArrayList<ArrayList<Integer>>
                         (data.attrVals[this.attribute].length);
-            for (ArrayList<Integer> l : childExamples) {
-                l = new ArrayList<Integer>();
+            for (int i = 0; i < data.attrVals[this.attribute].length; i++) {
+                childExamples.add(new ArrayList<Integer>());
             }
+            //for (ArrayList<Integer> l : childExamples) {
+                //l = new ArrayList<Integer>();
+            //}
 
             /*
              * Split examples based on the chosen attribute
@@ -170,14 +179,12 @@ public class DecisionTree implements Classifier{
                     children[i].label = majority;
                 }
             }
-
-
             attributes.add(this.attribute);
         }
     }
 
     /*Just takes dataset - uses all attributes in training*/
-    public DecisionTree(DiscreteDataSet data) {
+    public DecisionTree(DataSet data) {
         random = new Random();
 
         HashSet<Integer> attributes = new HashSet<Integer>(data.numAttrs);
@@ -191,7 +198,7 @@ public class DecisionTree implements Classifier{
     }
 
     /*Takes the dataset and attributes to use in training*/
-    public DecisionTree(DiscreteDataSet data, HashSet<Integer> attributes) {
+    public DecisionTree(DataSet data, HashSet<Integer> attributes) {
         random = new Random();
 
         /*Initialize example lists to include all examples*/
@@ -202,7 +209,7 @@ public class DecisionTree implements Classifier{
     }
 
     /*Take both attributes and examples to use for training*/
-    public DecisionTree(DiscreteDataSet data, HashSet<Integer> attributes,
+    public DecisionTree(DataSet data, HashSet<Integer> attributes,
             ArrayList<Integer> examples) {
         random = new Random();
         treeRoot = new Node(data, attributes, examples);
@@ -241,7 +248,6 @@ public class DecisionTree implements Classifier{
 
     /*
      * Simple main for testing.
-     *
      */
     public static void main(String argv[])
         throws FileNotFoundException, IOException {
