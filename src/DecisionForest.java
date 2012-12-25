@@ -30,11 +30,19 @@ public class DecisionForest implements Classifier{
         for (int i = 0; i < data.numAttrs; i++) { attributes.add(i); }
         for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
 
+
+        int numFeatures = (int)Math.sqrt(data.numAttrs);
+        //int numTrain = 2 * data.numTrainExs / 3;
+        int numTrain = data.numTrainExs;
+
+        System.out.println("Building trees with a sample of " + numFeatures
+                + " attributes and " + numTrain + " examples each.");
+
         for (int cTree = 0; cTree < forestSize; cTree++) {
 
             /* Need to decide how to select number of features*/
-            int numFeatures = random.nextInt(data.numAttrs - 1) + 1;
-            int numTrain = random.nextInt(data.numTrainExs);
+            //int numFeatures = random.nextInt(data.numAttrs - 1) + 1;
+            //int numTrain = random.nextInt(data.numTrainExs);
             HashSet<Integer> treeAttributes = new HashSet<Integer>(numFeatures);
             Vector<Integer> treeExamples = new Vector<Integer>(numTrain);
 
@@ -50,9 +58,8 @@ public class DecisionForest implements Classifier{
             }
 
             //System.out.println(numFeatures + ":" + numTrain);
-            //forest[cTree] = new DecisionTree(data, treeAttributes,
-            //treeExamples);
-            forest[cTree] = new DecisionTree(data, treeAttributes);
+            forest[cTree] = new DecisionTree(data, treeAttributes, treeExamples);
+            //forest[cTree] = new DecisionTree(data, treeAttributes);
         }
     }
 
@@ -102,6 +109,21 @@ public class DecisionForest implements Classifier{
          * elements of the set as a cross set.
          */
         BinaryDataSet d = new BinaryDataSet(filestem);
+
+        /*
+         * Do the Knuth Shuffle!  It sounds like more fun than it is!
+         */
+        //Set seed to constant to get the same result multiple times
+        Random random = new Random();
+        for (int i = 0; i < d.numTrainExs; i++) {
+            int swap = random.nextInt(d.numTrainExs - i);
+            int[] tempEx = d.trainEx[swap];
+            d.trainEx[swap] = d.trainEx[d.numTrainExs - i - 1];
+            d.trainEx[d.numTrainExs - i - 1] = tempEx;
+            int tempLabel = d.trainLabel[swap];
+            d.trainLabel[swap] = d.trainLabel[d.numTrainExs - i - 1];
+            d.trainLabel[d.numTrainExs - i - 1] = tempLabel;
+        }
 
         int crossSize = d.numTrainExs/4;
 

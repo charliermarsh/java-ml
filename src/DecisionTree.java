@@ -30,10 +30,74 @@ public class DecisionTree implements Classifier{
         public Node oneBranch;
 
         /*
-         * Accepts the dataset then an array of indices for remaining
-         * attributes and examples.  So each integer in examples is just the
-         * index of a training example in data.trainEx.  Avoid making too many
-         * copies of the examples this way
+         * Entropy of boolean variable - n negative examples, p positive
+         * examples
+         */
+        double entropy(double n, double p) {
+            if (n == 0 || p == 0)
+                return 0.0;
+            return -1.0
+                * ( ((n/(n+p)) * Math.log(n/(n+p)))
+                      + ( (p/(n+p)) * Math.log(p/(n+p)))) / Math.log(2);
+        }
+
+        /* 
+         * Pick the most important attribute - want to get the best one to
+         * split on - see R&N 18.3.4 on page 703.  Trying to minimize
+         * Remainder(A) since B(.) will remain the same for every
+         * attribute.
+         *
+         * Calculates max gain - for a better explanation, see
+         * http://dms.irb.hr/tutorial/tut_dtrees.php
+         * http://decisiontrees.net/decision-trees-tutorial/tutorial-4-id3/
+         */
+        int chooseAttribute(BinaryDataSet data,  HashSet<Integer> attributes,
+                Vector<Integer> examples) {
+            int bestAttr = -1;
+            double bestGain = 0;
+            for (int attr : attributes) {
+                /*
+                 * [value][label] : so [0][0] + [0][1] would be the number of
+                 * examples with a value of 0 for the attributes.
+                 * [0][1] + [1][1] would be number of examples with label 1 in
+                 * examples.  Use this to calculate entropy and gain.
+                 */
+                double[][] count = new double[2][2];
+                for (int ex : examples) {
+                    //Yay array index beauty...
+                    count[data.trainEx[ex][attr]][data.trainLabel[ex]]++;
+                }
+                
+                //Not needed, but using until I am sure my code works
+                //(recalculates current entropy every time)
+                //double gain = entropy(count[0][0] + count[1][0], count[0][1]
+                        //+ count[1][1]);
+                double gain = 1.0;
+                double zeroEntropy = (count[0][0] + count[0][1])
+                                        / examples.size();
+                zeroEntropy *= entropy(count[0][0], count[0][1]);
+
+                double oneEntropy = (count[1][0] + count[1][1])
+                                        / examples.size();
+                oneEntropy *= entropy(count[1][0], count[1][1]);
+
+                gain -= zeroEntropy + oneEntropy;
+                if (gain >= bestGain) {
+                    bestAttr = attr;
+                    bestGain = gain;
+                }
+                //System.out.println(gain);
+            }
+            //System.out.println(bestGain + "\n\n\n");
+            return bestAttr;
+        }
+
+        /*
+         * Accepts the dataset then an array of indices for remaining examples.
+         * So each integer in examples is just the index of a training example
+         * in data.trainEx.  Avoid making too many copies of the examples this
+         * way.  attributes is a set of all remaining attributes to split on.
+         * This is modified and passed to children by each node.
          */
         Node(BinaryDataSet data,  HashSet<Integer> attributes,
                 Vector<Integer> examples) {
@@ -75,76 +139,8 @@ public class DecisionTree implements Classifier{
                 return;
             }
 
-            /* 
-             * Pick the most important attribute - want to get the best one to
-             * split on - see R&N 18.3.4 on page 703.  Trying to minimize
-             * Remainder(A) since B(.) will remain the same for every
-             * attribute.
-             *
-             * Calculates max gain - for a better explanation, see
-             * http://dms.irb.hr/tutorial/tut_dtrees.php
-             */
-            double bestGain = 0;
-            double minG, maxG;
-            minG = 0;
-            maxG = 0;
-            double zeroGain, oneGain;
-            for (int attr : attributes) {
-                /*
-                 * [value][label] : so [0][0] + [0][1] would be the number of
-                 * examples with a value of 0 for the attributes.
-                 * [0][1] + [1][1] would be number of examples with label 1 in
-                 * examples.  Use this to calculate entropy and gain.
-                 */
-                int[][] counts = new int[2][2];
-                for (int ex : examples) {
-                    //Yay array index beauty...
-                    counts[data.trainEx[ex][attr]][data.trainLabel[ex]]++;
-                }
-                //Math is confusing when typed out.  Calculates gain for each
-                //attribute value, then sums (want to maximize the sum)
-                double gain = 0;
-                //Better than repeating the slightly changed code twice.
-                for (int i = 0; i <= 1; i++) {
-                    double total = counts[i][0] + counts[i][1];
-                    double weight = total / examples.size();
-                    double zeroEntropy = 0;
-                    double oneEntropy = 0;
-                    if (total > 0) {
-                        if (counts[i][0] > 0) {
-                            zeroEntropy = (counts[i][0] / total)
-                                * Math.log(counts[i][0] / total) / Math.log(2);
-                        }
-                        if (counts[i][1] > 0) {
-                            oneEntropy = (counts[i][1] / total)
-                                * Math.log(counts[i][1] / total) / Math.log(2);
-                        }
-                        gain += weight * (zeroEntropy + oneEntropy);
-                        /*
-                         *System.out.println(examples.size() + "\t"
-                         *        + counts[i][0] + "\t" + counts[i][1] + "\t"
-                         *        + gain);
-                         */
-                    }
-                }
-                minG = Math.min(minG, gain);
-                maxG = Math.max(maxG, gain);
-                if (gain <= bestGain) {
-                    bestGain = gain;
-                    this.attribute = attr;
-                }
-            }
-            //System.out.println(minG + ":" + maxG);
 
-            /*
-             * None of the splits do anything - Just take the majority
-             * avoids stack overflow from depth - perhaps not ideal?
-             */
-            //if (bestGain == 0) {
-                //this.attribute = -1;
-                //this.label = majority;
-                //return;
-            //}
+            this.attribute = chooseAttribute(data, attributes, examples);
 
             //Remove the attribute so it cannot be used again in child branches
             //Add it back in before returning
@@ -273,7 +269,7 @@ public class DecisionTree implements Classifier{
          * Do the Knuth Shuffle!  It sounds like more fun than it is!
          */
         //Set seed to constant to get the same result multiple times
-        Random random = new Random(10);
+        Random random = new Random();
         for (int i = 0; i < d.numTrainExs; i++) {
             int swap = random.nextInt(d.numTrainExs - i);
             int[] tempEx = d.trainEx[swap];
@@ -285,7 +281,7 @@ public class DecisionTree implements Classifier{
         }
 
         //What proportion of the dataset to use for testing
-        int crossSize = d.numTrainExs/4;
+        int crossSize = d.numTrainExs/8;
 
         int[][] crossEx = new int[crossSize][];
         int[] crossLabel = new int[crossSize];
