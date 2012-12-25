@@ -5,7 +5,7 @@
  */
 import java.io.*;
 import java.util.Random;
-import java.util.Vector;
+import java.util.ArrayList;
 import java.util.HashSet;
 public class DecisionTree implements Classifier{
 
@@ -24,10 +24,8 @@ public class DecisionTree implements Classifier{
          * What is the label for this node?
          */
         public int label;
-        /* Left branch of node */
-        public Node zeroBranch;
-        /* Right branch of node - */
-        public Node oneBranch;
+
+        public Node[] children;
 
         /*
          * Entropy of boolean variable - n negative examples, p positive
@@ -51,8 +49,8 @@ public class DecisionTree implements Classifier{
          * http://dms.irb.hr/tutorial/tut_dtrees.php
          * http://decisiontrees.net/decision-trees-tutorial/tutorial-4-id3/
          */
-        int chooseAttribute(BinaryDataSet data,  HashSet<Integer> attributes,
-                Vector<Integer> examples) {
+        int chooseAttribute(DiscreteDataSet data,  HashSet<Integer> attributes,
+                ArrayList<Integer> examples) {
             int bestAttr = -1;
             double bestGain = 0;
             for (int attr : attributes) {
@@ -99,11 +97,8 @@ public class DecisionTree implements Classifier{
          * way.  attributes is a set of all remaining attributes to split on.
          * This is modified and passed to children by each node.
          */
-        Node(BinaryDataSet data,  HashSet<Integer> attributes,
-                Vector<Integer> examples) {
-
-            Vector<Integer> zeroExamples = new Vector<Integer>();
-            Vector<Integer> oneExamples = new Vector<Integer>();
+        Node(DiscreteDataSet data,  HashSet<Integer> attributes,
+                ArrayList<Integer> examples) {
 
             this.label = -1;
 
@@ -146,44 +141,49 @@ public class DecisionTree implements Classifier{
             //Add it back in before returning
             attributes.remove(this.attribute);
 
+            //Initialize list of examples that will be passed to children
+            ArrayList<ArrayList<Integer>> childExamples = new
+                ArrayList<ArrayList<Integer>>
+                        (data.attrVals[this.attribute].length);
+            for (ArrayList<Integer> l : childExamples) {
+                l = new ArrayList<Integer>();
+            }
+
             /*
              * Split examples based on the chosen attribute
              */
-            for (int i = 0; i < examples.size(); i++) {
-                if (data.trainEx[i][this.attribute] == 0) {
-                    zeroExamples.add(i);
-                } else {
-                    oneExamples.add(i);
+            for (int ex : examples) {
+                childExamples.get(data.trainEx[ex][this.attribute]).add(ex);
+            }
+
+            children = new Node[data.attrVals[this.attribute].length];
+            /*Create children trees*/
+            for (int i = 0; i < data.attrVals[this.attribute].length; i++) {
+                children[i] = new Node(data,
+                                        attributes,
+                                        childExamples.get(i));
+                /*
+                 * Need to set child label if they don't have any examples to train
+                 * on
+                 */
+                if (childExamples.get(i).size() == 0) {
+                    children[i].label = majority;
                 }
             }
 
-            /*Create children trees*/
-            zeroBranch = new Node(data, attributes, zeroExamples);
-            oneBranch = new Node(data, attributes, oneExamples);
-
-            /*
-             * Need to set child label if they don't have any examples to train
-             * on
-             */
-            if (zeroExamples.size() == 0) {
-                zeroBranch.label = majority;
-            }
-            if (oneExamples.size() == 0) {
-                oneBranch.label = majority;
-            }
 
             attributes.add(this.attribute);
         }
     }
 
     /*Just takes dataset - uses all attributes in training*/
-    public DecisionTree(BinaryDataSet data) {
+    public DecisionTree(DiscreteDataSet data) {
         random = new Random();
 
         HashSet<Integer> attributes = new HashSet<Integer>(data.numAttrs);
-        Vector<Integer> examples = new Vector<Integer>(data.numTrainExs);
+        ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
 
-        /*Initialize example and attribute vectors*/
+        /*Initialize example and attribute lists*/
         for (int i = 0; i < data.numAttrs; i++) { attributes.add(i); }
         for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
 
@@ -191,19 +191,19 @@ public class DecisionTree implements Classifier{
     }
 
     /*Takes the dataset and attributes to use in training*/
-    public DecisionTree(BinaryDataSet data, HashSet<Integer> attributes) {
+    public DecisionTree(DiscreteDataSet data, HashSet<Integer> attributes) {
         random = new Random();
 
-        /*Initialize example vector to include all examples*/
-        Vector<Integer> examples = new Vector<Integer>(data.numTrainExs);
+        /*Initialize example lists to include all examples*/
+        ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
         for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
 
         treeRoot = new Node(data, attributes, examples);
     }
 
     /*Take both attributes and examples to use for training*/
-    public DecisionTree(BinaryDataSet data, HashSet<Integer> attributes,
-            Vector<Integer> examples) {
+    public DecisionTree(DiscreteDataSet data, HashSet<Integer> attributes,
+            ArrayList<Integer> examples) {
         random = new Random();
         treeRoot = new Node(data, attributes, examples);
     }
@@ -215,13 +215,7 @@ public class DecisionTree implements Classifier{
         Node current = treeRoot;
         int depth = 0;
         while (current.attribute != -1) {
-            depth++;
-            //System.out.println(current.attribute + "\t" + current.label);
-            if (ex[current.attribute] == 0) {
-                current = current.zeroBranch;
-            } else {
-                current = current.oneBranch;
-            }
+            current = current.children[ex[current.attribute]];
         }
         //System.out.println(depth);
         //System.out.println(current.attribute + "\t" + current.label);
@@ -263,7 +257,7 @@ public class DecisionTree implements Classifier{
          * Create a cross validation set - just takes the last crossSize
          * elements of the set as a cross set.
          */
-        BinaryDataSet d = new BinaryDataSet(filestem);
+        DiscreteDataSet d = new DiscreteDataSet(filestem);
 
         /*
          * Do the Knuth Shuffle!  It sounds like more fun than it is!

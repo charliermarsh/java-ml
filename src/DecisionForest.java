@@ -5,7 +5,7 @@
  */
 import java.io.*;
 import java.util.Random;
-import java.util.Vector;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Collections;
 public class DecisionForest implements Classifier{
@@ -13,7 +13,7 @@ public class DecisionForest implements Classifier{
     Random random;
     DecisionTree[] forest;
 
-    public DecisionForest(BinaryDataSet data, int forestSize) {
+    public DecisionForest(DiscreteDataSet data, int forestSize) {
         random = new Random();
 
         forest = new DecisionTree[forestSize];
@@ -25,8 +25,8 @@ public class DecisionForest implements Classifier{
          *
          * Picks a random number of attributes/examples to train each tree.
          */
-        Vector<Integer> attributes = new Vector<Integer>(data.numAttrs);
-        Vector<Integer> examples = new Vector<Integer>(data.numTrainExs);
+        ArrayList<Integer> attributes = new ArrayList<Integer>(data.numAttrs);
+        ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
         for (int i = 0; i < data.numAttrs; i++) { attributes.add(i); }
         for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
 
@@ -44,7 +44,7 @@ public class DecisionForest implements Classifier{
             //int numFeatures = random.nextInt(data.numAttrs - 1) + 1;
             //int numTrain = random.nextInt(data.numTrainExs);
             HashSet<Integer> treeAttributes = new HashSet<Integer>(numFeatures);
-            Vector<Integer> treeExamples = new Vector<Integer>(numTrain);
+            ArrayList<Integer> treeExamples = new ArrayList<Integer>(numTrain);
 
             //Randomize the list
             Collections.shuffle(attributes);
@@ -108,7 +108,7 @@ public class DecisionForest implements Classifier{
          * Create a cross validation set - just takes the last crossSize
          * elements of the set as a cross set.
          */
-        BinaryDataSet d = new BinaryDataSet(filestem);
+        DiscreteDataSet d = new DiscreteDataSet(filestem);
 
         /*
          * Do the Knuth Shuffle!  It sounds like more fun than it is!
