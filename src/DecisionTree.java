@@ -282,7 +282,7 @@ public class DecisionTree implements Classifier{
         }
 
         //What proportion of the dataset to use for testing
-        int crossSize = d.numTrainExs/8;
+        int crossSize = d.numTrainExs/4;
 
         int[][] crossEx = new int[crossSize][];
         int[] crossLabel = new int[crossSize];

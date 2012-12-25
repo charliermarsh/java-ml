@@ -32,8 +32,9 @@ public class DecisionForest implements Classifier{
 
 
         int numFeatures = (int)Math.sqrt(data.numAttrs);
-        //int numTrain = 2 * data.numTrainExs / 3;
-        int numTrain = data.numTrainExs;
+        //int numFeatures = data.numAttrs;
+        int numTrain = 2 * data.numTrainExs / 3;
+        //int numTrain = data.numTrainExs;
 
         System.out.println("Building trees with a sample of " + numFeatures
                 + " attributes and " + numTrain + " examples each.");
