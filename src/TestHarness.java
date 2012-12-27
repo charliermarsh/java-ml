@@ -56,7 +56,7 @@ public class TestHarness {
             Classifier c;
             switch (algo) {
                 case DT:
-                    c = new DecisionTree(d);
+                    c = new DecisionTree(d, false);
                     break;
                 case DF:
                     c = new DecisionForest(d, numTrees);
@@ -74,20 +74,28 @@ public class TestHarness {
                     c = new BaselineClassifier(d);
             }
 
-
+            System.out.println("Trial " + (trial + 1) + ": ");
             int correct = 0;
+            for (int ex = 0; ex < d.numTrainExs; ex++) {
+                if (c.predict(d.trainEx[ex]) == d.trainLabel[ex])
+                    correct++;
+            }
+            System.out.println("\tPerformance on train set: "
+                            + (100.0*correct/d.numTrainExs) + "%");
+
+            correct = 0;
             for (int ex = oEx.length - crossSize; ex < oEx.length; ex++) {
                 if (c.predict(oEx[ex]) == oLabel[ex])
                     correct++;
             }
-            
-            totalCorrect += correct;
-            System.out.println("Performance on cross set: "
-                    + (100*correct / crossSize) + "%");
 
+            totalCorrect += correct;
+            System.out.println("\tPerformance on cross set: "
+                            + (100.0*correct / crossSize) + "%");
         }
+
         System.out.println("Average percent correct: "
-                    + (100*totalCorrect / (crossSize * numTrials))  + "%");
+                + (100.0*totalCorrect / (crossSize * numTrials))  + "%");
         return;
     }
 
@@ -105,35 +113,31 @@ public class TestHarness {
 
         DataSet d;
         if (argv[1].equals("dt")) {
-        	System.out.println("Using decision tree");
-        	algo = classifier.DT;
-        	d = new DiscreteDataSet(argv[0]);
-        }
-        else if (argv[1].equals("df")) {
-        	System.out.println("Using decision forest");
-        	if (argv.length == 4) { numTrees = Integer.parseInt(argv[3]); }
-        	algo = classifier.DF;
-        	d = new DiscreteDataSet(argv[0]);
-        }
-        else if (argv[1].equals("knn")) {
-        	System.out.println("Using k-nearest-neighbor");
-        	algo = classifier.KNN;
-        	d = new NumericDataSet(argv[0]);
-        }
-        else if (argv[1].equals("slnn")) {
-        	System.out.println("Using single layer neural net");
-        	algo = classifier.SLNN;
-        	d = new BinaryDataSet(argv[0]);
-        }
-        else if (argv[1].equals("mlnn")) {
-        	System.out.println("Using multilayer neural net");
-        	algo = classifier.MLNN;
-        	d = new BinaryDataSet(argv[0]);
-        }
-        else {
-        	System.out.println("Using baseline classifier");
-        	algo = classifier.BASE;
-        	d = new DataSet(argv[0]);
+            System.out.println("Using decision tree");
+            algo = classifier.DT;
+            d = new DiscreteDataSet(argv[0]);
+        } else if (argv[1].equals("df")) {
+            System.out.println("Using decision forest");
+            if (argv.length == 4) { numTrees = Integer.parseInt(argv[3]); }
+            algo = classifier.DF;
+            //d = new DiscreteDataSet(argv[0]);
+            d = new DiscreteDataSet(argv[0]);
+        } else if (argv[1].equals("knn")) {
+            System.out.println("Using k-nearest-neighbor");
+            algo = classifier.KNN;
+            d = new NumericDataSet(argv[0]);
+        } else if (argv[1].equals("slnn")) {
+            System.out.println("Using single layer neural net");
+            algo = classifier.SLNN;
+            d = new BinaryDataSet(argv[0]);
+        } else if (argv[1].equals("mlnn")) {
+            System.out.println("Using multilayer neural net");
+            algo = classifier.MLNN;
+            d = new BinaryDataSet(argv[0]);
+        } else {
+            System.out.println("Using baseline classifier");
+            algo = classifier.BASE;
+            d = new DataSet(argv[0]);
         }
 
         runTrials(d, Integer.parseInt(argv[2]));

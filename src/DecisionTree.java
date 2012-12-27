@@ -10,7 +10,23 @@ import java.util.HashSet;
 public class DecisionTree implements Classifier{
 
     Node treeRoot;
+
     Random random;
+
+    /*
+     * Randomize tree (for random forest)?  If true, chooses some subset of
+     * attributes to choose best from at each node
+     */
+    boolean randomize;
+
+    /*
+     * How many features do we want to choose from at each node in randomized
+     * tree?
+     */
+    private int numFeatures(int total) {
+        return (int)Math.sqrt(total) + 1;
+        //return (int)Math.log(total) + 1;
+    }
 
     /*
      *  Inner class to represent tree structure - Splits on binary features
@@ -126,9 +142,6 @@ public class DecisionTree implements Classifier{
 
             majority = (count[1] > count[0] ? 1 : 0);
 
-            //System.out.println(attributes.size() + "\t" + examples.size()
-            //        + "\t" + count[0] + ":" + count[1]);
-
             /*
              * They all have the same label or there are no more attributes to
              * split on
@@ -140,8 +153,36 @@ public class DecisionTree implements Classifier{
                 return;
             }
 
+            /*
+             * If randomization is on (i.e. being used in a random forest), then
+             * we want to choose some random subset of features to choose best
+             * split feature in.
+             */
+            if (randomize) {
+                int numAttr = numFeatures(attributes.size());
+                //More efficients ways to do this, but this works well enough
+                HashSet<Integer> attrSample = new HashSet<Integer>(numAttr);
+                for (int attr : attributes) {
+                    /*
+                     * Add each with a probability of numAttr/number attr
+                     * Also adds some variance so we slightly randomize the
+                     * exact number
+                     */
+                    if (random.nextInt(attributes.size()) < numAttr) {
+                        attrSample.add(attr);
+                    }
+                }
+                //System.out.println(numAttr + " : " + attrSample.size());
+                this.attribute = chooseAttribute(data, attrSample, examples);
+            } else {
+                this.attribute = chooseAttribute(data, attributes, examples);
+            }
 
-            this.attribute = chooseAttribute(data, attributes, examples);
+            /*No best attribute*/
+            if (this.attribute == -1) {
+                this.label = majority;
+                return;
+            }
 
             //Remove the attribute so it cannot be used again in child branches
             //Add it back in before returning
@@ -184,9 +225,10 @@ public class DecisionTree implements Classifier{
     }
 
     /*Just takes dataset - uses all attributes in training*/
-    public DecisionTree(DataSet data) {
+    public DecisionTree(DataSet data, boolean rand) {
         random = new Random();
 
+        this.randomize = rand;
         HashSet<Integer> attributes = new HashSet<Integer>(data.numAttrs);
         ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
 
@@ -198,8 +240,10 @@ public class DecisionTree implements Classifier{
     }
 
     /*Takes the dataset and attributes to use in training*/
-    public DecisionTree(DataSet data, HashSet<Integer> attributes) {
+    public DecisionTree(DataSet data, HashSet<Integer> attributes, boolean rand) {
         random = new Random();
+
+        this.randomize = rand; //Randomized tree?
 
         /*Initialize example lists to include all examples*/
         ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
@@ -210,8 +254,9 @@ public class DecisionTree implements Classifier{
 
     /*Take both attributes and examples to use for training*/
     public DecisionTree(DataSet data, HashSet<Integer> attributes,
-            ArrayList<Integer> examples) {
+            ArrayList<Integer> examples, boolean rand) {
         random = new Random();
+        this.randomize = rand;
         treeRoot = new Node(data, attributes, examples);
     }
 
@@ -306,7 +351,7 @@ public class DecisionTree implements Classifier{
         System.out.println("Training classifier on " + d.numTrainExs
                 + " examples");
 
-        Classifier c = new DecisionTree(d);
+        Classifier c = new DecisionTree(d, false);
 
         System.out.println("Testing classifier on " + crossEx.length
                 + " examples");

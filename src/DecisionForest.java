@@ -30,16 +30,12 @@ public class DecisionForest implements Classifier{
         for (int i = 0; i < data.numAttrs; i++) { attributes.add(i); }
         for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
 
-        //Train each tree by choosing a subset of features = to sqrt of number
-        //of features
-        int numFeatures = (int)Math.sqrt(data.numAttrs);
-        //int numFeatures = (int)(Math.log(data.numAttrs)/Math.log(2));
+        //Train each tree by choosing a subset of features. Actually just using
+        //every feature in this case.
+        int numFeatures = data.numAttrs;
         
         //Train each tree on a sample of 2/3 of the examples
         int numTrain = 2 * data.numTrainExs / 3;
-
-        //System.out.println("Building trees with a sample of " + numFeatures
-        //        + " attributes and " + numTrain + " examples each.");
 
         for (int cTree = 0; cTree < forestSize; cTree++) {
 
@@ -61,7 +57,8 @@ public class DecisionForest implements Classifier{
             }
 
             //System.out.println(numFeatures + ":" + numTrain);
-            forest[cTree] = new DecisionTree(data, treeAttributes, treeExamples);
+            forest[cTree] = new DecisionTree(data, treeAttributes,
+                                    treeExamples, true);
             //forest[cTree] = new DecisionTree(data, treeAttributes);
         }
     }
