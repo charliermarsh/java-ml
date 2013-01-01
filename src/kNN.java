@@ -10,7 +10,7 @@ public class kNN implements Classifier {
 	// data set of training examples
 	private DataSet d;
 	// minimum possible value of k
-	private int kMin = 5;
+	private int kMin = 1;
 	// maximum possible value of k
 	private int kMax = 15;
 	// cross-validated, optimized value of k
@@ -37,9 +37,45 @@ public class kNN implements Classifier {
 		for (int i = 0; i < this.weights.length; i++)
 			this.weights[i] = 1.0;
 		
-		//this.kOpt = optimizeK(this.d, this.kMin, this.kMax);
-		backwardsEliminate(this.d);
-		trainWeights(this.d, 100000);		
+		this.kOpt = optimizeK(this.kMin, this.kMax);
+		backwardsEliminate();
+		trainWeights(100000);		
+	}
+	
+	/** Constructor for the kNN machine learning algorithm.
+	 *  Takes as argument a data set and two indices, ignoring
+	 *  training examples between those indices 
+	 *  to allow for cross validation. Additionally, takes 
+	 *  an array of eliminated attributes, weights for each training
+	 *  example, and an optimal k value. From then on, examples
+	 *  in the data set can be fed to predict() in return for
+	 *  classifications. This constructor is used when a kNN
+	 *  instance is required for which no optimizations should
+	 *  be performed.
+	 */
+	public kNN(DataSet d, int from, int to, int kOpt, 
+			boolean[] elimAttr, double[] weights) {
+		/* Setup array labelledData so that it contains all the training
+		   data attributes along with that example's label. */
+		// create data set, excluding firstEx to lastEx examples
+		DataSet subset = new DataSet();
+		subset.numAttrs = d.numAttrs;
+		subset.numTrainExs = d.numTrainExs - (to - from);
+		subset.trainEx = new int[subset.numTrainExs][subset.numAttrs];
+		subset.trainLabel = new int[subset.numTrainExs];
+		for (int i = 0; i < from; i++) {
+			subset.trainEx[i] = d.trainEx[i];
+			subset.trainLabel[i] = d.trainLabel[i];
+		}
+		for (int i = to; i < d.numTrainExs; i++) {
+			subset.trainEx[i - to + from] = d.trainEx[i];
+			subset.trainLabel[i - to + from] = d.trainLabel[i];
+		}
+		
+		this.d = subset;
+		this.kOpt = kOpt;
+		this.elimAttr = elimAttr;
+		this.weights = weights;	
 	}
 	
 	/** Computes the squared distance between two integer
@@ -59,12 +95,23 @@ public class kNN implements Classifier {
 	/** Calculates the error over a labeled data set, returning
 	 * a double that represents the percent error.
 	 */
-	private double error(DataSet d) {
+	private double error() {
 		double error = 0.0;
-		int num_trials = Math.min(100, d.numTrainExs);
-		for (int i = 0; i < num_trials; i++) {
-			if (predictFromTraining(d.trainEx[i]) != d.trainLabel[i])
-				error++;
+		
+		// use 8 different sets for cross validation
+		int numSets = 8;
+		for (int setNum = 0; setNum < numSets; setNum++) {
+			int from = setNum*this.d.numTrainExs/numSets;
+			int to = (setNum+1)*this.d.numTrainExs/numSets;
+			
+			// create new kNN using subset of data set
+			kNN knn = new kNN(this.d, from, to, this.kOpt,
+					this.elimAttr, this.weights);
+			
+			for (int t = from; t < to; t++) {
+				if (knn.predict(this.d.trainEx[t]) != this.d.trainLabel[t])
+					error++;
+			}
 		}
 		return error;
 	}
@@ -74,11 +121,10 @@ public class kNN implements Classifier {
 	 * set d of the jth closest example to i. Returns a double that 
 	 * represents the percent error.
 	 */
-	private double error(DataSet d, int[][] a) {
+	private double error(int[][] a) {
 		double error = 0.0;
-		int num_trials = Math.min(100, d.numTrainExs);
-		for (int i = 0; i < num_trials; i++) {
-			if (voteCount(a[i]) != d.trainLabel[i])
+		for (int i = 0; i < this.d.numTrainExs; i++) {
+			if (voteCount(a[i]) != this.d.trainLabel[i])
 				error++;
 		}
 		return error;
@@ -87,38 +133,37 @@ public class kNN implements Classifier {
 	/** Trains the weights of the attributes using backwards
 	 * propagation on data set d, running T iterations.
 	 */
-	private void trainWeights(DataSet d, int T) {	
+	private void trainWeights(int T) {	
 		// get k nearest indices for each training example
-		int[][] kBest = new int[d.numTrainExs][this.kOpt];
-		int[] order = new int[d.numTrainExs];
-		for (int i = 0; i < kBest.length; i++) {
-			kBest[i] = kNearestFromTraining(d, this.kOpt, d.trainEx[i]);
-			order[i] = i;
+		// as determined by cross validation
+		int[][] kBest = new int[this.d.numTrainExs][this.kOpt];
+
+		// use 8 different sets for cross validation
+		int numSets = 8;
+		for (int setNum = 0; setNum < numSets; setNum++) {
+			int from = setNum*this.d.numTrainExs/numSets;
+			int to = (setNum+1)*this.d.numTrainExs/numSets;
+			
+			// create new kNN using subset of data set
+			kNN knn = new kNN(this.d, from, to, this.kOpt,
+					this.elimAttr, this.weights);
+			
+			for (int t = from; t < to; t++)
+				kBest[t] = 
+					knn.kNearest(this.kOpt, this.d.trainEx[t]);
 		}
 		
 		// run T iterations of weight training
 		for (int t = 0; t < T; t++) {
-			/*
-	         * Do the Knuth Shuffle!  It sounds like more fun than it is!
-	         */
-	        //Set seed to constant to get the same result multiple times
-	        Random random = new Random();
-	        for (int i = 0; i < order.length; i++) {
-	            int swap = random.nextInt(order.length - i);
-	            int temp = order[swap];
-	            order[swap] = order[order.length - i - 1];
-	            order[order.length - i - 1] = temp;
-	        }
-	        
+
 			// alter weights on each example
-			for (int i = 0; i < d.numTrainExs; i++) {
-				int exIndex = order[i];
+			for (int i = 0; i < this.d.numTrainExs; i++) {
 				
 				// modify weights to satisfy example
-				while (d.trainLabel[exIndex] != voteCount(kBest[exIndex])) {
+				while (this.d.trainLabel[i] != voteCount(kBest[i])) {
 					for (int k = 0; k < this.kOpt; k++) {
-						int neighborIndex = kBest[exIndex][k];
-						if (d.trainLabel[neighborIndex] != d.trainLabel[exIndex])
+						int neighborIndex = kBest[i][k];
+						if (this.d.trainLabel[neighborIndex] != this.d.trainLabel[i])
 							this.weights[neighborIndex] -= this.learningRate;
 						else
 							this.weights[neighborIndex] += this.learningRate;
@@ -134,76 +179,90 @@ public class kNN implements Classifier {
 	 * distances, employs a linear-time distance update that just alters
 	 * pre-computed distances based on attribute in question.
 	 */
-	private void backwardsEliminate(DataSet d) {
+	private void backwardsEliminate() {
 		// calculate all distances to avoid recomputation
-		double[][] dists = new double[d.numTrainExs][d.numTrainExs];
+		double[][] dists = new double[this.d.numTrainExs][this.d.numTrainExs];
+		
+		/*
+		// use 8 different sets for cross validation (set dist to infinity)
+		int numSets = 8;
+		for (int setNum = 0; setNum < numSets; setNum++) {
+			int from = setNum*this.d.numTrainExs/numSets;
+			int to = (setNum+1)*this.d.numTrainExs/numSets;
+
+			for (int t = from; t < to; t++) {
+				for (int s = t+1; s < to; s++) {
+					dists[t][s] = Double.POSITIVE_INFINITY;
+					dists[s][t] = dists[t][s];
+				}
+			}
+		}*/
+
 		for (int i = 0; i < dists.length; i++) {
 			for (int j = i+1; j < dists.length; j++) {
-				dists[i][j] = dist(d.trainEx[i], d.trainEx[j]);
+				if (dists[i][j] == Double.POSITIVE_INFINITY) continue;
+				
+				dists[i][j] = dist(this.d.trainEx[i], this.d.trainEx[j]);
 				dists[j][i] = dists[i][j];
 			}
 		}
 		
 		// orderedIndices[i][j] is index of jth closest example to i
-		int[][] orderedIndices = new int[d.numTrainExs][d.numTrainExs];
+		int[][] orderedIndices = new int[this.d.numTrainExs][this.d.numTrainExs];
 		for (int i = 0; i < orderedIndices.length; i++) {
 			// annoying Integer to int casting issues
-			Integer[] a = new Integer[d.numTrainExs];
+			Integer[] a = new Integer[this.d.numTrainExs];
 			for (int j = 0; j < orderedIndices.length; j++) {
 				a[j] = j;
 			}
-			Arrays.sort(a, new exComparator(dists[i], i));
+			exComparator comp = new exComparator(dists[i], i);
+			comp.descending = true;
+			Arrays.sort(a, comp);
 			for (int j = 0; j < orderedIndices.length; j++) {
 				orderedIndices[i][j] = a[j];
 			}
 		}
 		
 		// calculate base error with no attribute elimination
-		double baselineError = error(d, orderedIndices);
+		double baselineError = error(orderedIndices);
 		
 		int sum = 0;
 		// iterate over each attribute
-		for (int m = 0; m < d.numAttrs; m++) {
+		for (int m = 0; m < this.d.numAttrs; m++) {
+			double[][] newDists = new double[this.d.numTrainExs][this.d.numTrainExs];
+			
 			// linear-time distance update
 			for (int i = 0; i < dists.length; i++) {
 				for (int j = i+1; j < dists.length; j++) {
-					dists[i][j] -= Math.abs(d.trainEx[i][m] - d.trainEx[j][m]);
-					dists[j][i] = dists[i][j];
+					newDists[i][j] = dists[i][j] - 
+							Math.abs(this.d.trainEx[i][m] - this.d.trainEx[j][m]);
+					newDists[j][i] = newDists[i][j];
 				}
 			}
 			
-			/* only compute num_trials new kNN to avoid excessive computation;
-			 * i.e., error(d, ...) only take num_trials samples, so no reason
-			 * to compute beyond that
-			 */
-			int num_trials = Math.min(100, d.numTrainExs);
-			for (int i = 0; i < num_trials; i++) {
+			// compute new k nearest
+			for (int i = 0; i < this.d.numTrainExs; i++) {
 				// annoying Integer to int casting issues
-				Integer[] a = new Integer[d.numTrainExs];
+				Integer[] a = new Integer[this.d.numTrainExs];
 				for (int j = 0; j < orderedIndices.length; j++) {
 					a[j] = orderedIndices[i][j];
 				}
-				Arrays.sort(a, new exComparator(dists[i], i));
+				exComparator comp = new exComparator(newDists[i], i);
+				comp.descending = true;
+				Arrays.sort(a, comp);
 				for (int j = 0; j < orderedIndices.length; j++) {
 					orderedIndices[i][j] = a[j];
 				}
 			}
 
-			double adjustedError = error(d, orderedIndices);
+			double adjustedError = error(orderedIndices);
+
 			// if error improved, keep attribute eliminated; else, retain
 			if (adjustedError < baselineError) {
 				this.elimAttr[m] = true;
 				baselineError = adjustedError;
+				dists = newDists;
 				sum++;
-			}
-			else {
-				// linear-time distance update
-				for (int i = 0; i < dists.length; i++) {
-					for (int j = i+1; j < dists.length; j++) {
-						dists[i][j] += Math.abs(d.trainEx[i][m] - d.trainEx[j][m]);
-						dists[j][i] = dists[i][j];
-					}
-				}
 			}
 		}
 		System.out.printf("%d attributes removed.\n", sum);
@@ -213,38 +272,50 @@ public class kNN implements Classifier {
 	 * k for the kNN algorithm on data set d. Returns an integer k 
 	 * between k_min and k_max (inclusive).
 	 */
-	private int optimizeK(DataSet d, int kMin, int kMax) {
+	private int optimizeK(int kMin, int kMax) {
 		assert(kMax >= kMin);
 		
-		// run 100 trials to find best k
-		int numTrials = Math.min(1000, d.numTrainExs);
+		// use 8 different sets for cross validation
+		int numSets = 8;
 		int[] kErrors = new int[kMax - kMin + 1];
-		for (int t = 0; t < numTrials; t++) {
-			// get k_max best examples
-			int[] best = kNearestFromTraining(d, kMax, d.trainEx[t]);
+		
+		for (int setNum = 0; setNum < numSets; setNum++) {
+			int from = setNum*this.d.numTrainExs/numSets;
+			int to = (setNum+1)*this.d.numTrainExs/numSets;
 			
-	    	// count votes by value of k
-	    	double vote_0 = 0;
-	    	double vote_1 = 0;
-	    	for (int k = 0; k < kMax; k++) {
-	    		int i = best[k];
-	    		
-	    		// track errors for appropriate k
-	    		if (k >= kMin) {
-	    			int result = (vote_1 > vote_0)? 1 : 0;
-		    		if (result != d.trainLabel[t]) 
-		    			kErrors[k - kMin]++;
-	    		}
-	    		
-	    		// continue to increment vote counts
-	    		if (d.trainLabel[i] == 1)
-	    			vote_1 += this.weights[i];
-	    		else
-	    			vote_0 += this.weights[i];
-	    	}
-	    	int result = (vote_1 > vote_0)? 1 : 0;
-    		if (result != d.trainLabel[t]) 
-    			kErrors[kMax - kMin]++;
+			// create new kNN using subset of data set
+			kNN knn = new kNN(this.d, from, to, this.kOpt,
+					this.elimAttr, this.weights);
+			
+			// test on held-out training examples
+			for (int t = from; t < to; t++) {
+
+				// get k_max best examples
+				int[] best = knn.kNearest(kMax, this.d.trainEx[t]);
+
+				// count votes by value of k
+				double vote_0 = 0;
+				double vote_1 = 0;
+				for (int k = 0; k < kMax; k++) {
+					int i = best[k];
+
+					// track errors for appropriate k
+					if (k >= kMin) {
+						int result = (vote_1 > vote_0)? 1 : 0;
+						if (result != this.d.trainLabel[t]) 
+							kErrors[k - kMin]++;
+					}
+
+					// continue to increment vote counts
+					if (this.d.trainLabel[i] == 1)
+						vote_1 += this.weights[i];
+					else
+						vote_0 += this.weights[i];
+				}
+				int result = (vote_1 > vote_0)? 1 : 0;
+				if (result != this.d.trainLabel[t]) 
+					kErrors[kMax - kMin]++;
+			}
 		}
 		// set k to that of minimized error
 		double min = Double.MAX_VALUE;
@@ -268,6 +339,7 @@ public class kNN implements Classifier {
 		private double[] dists;
 	    private int[] ex;
 	    private int exIndex = -1;
+	    public boolean descending = false;
 	    
 	    private exComparator(int[] ex) {
 	      this.ex = ex;
@@ -302,11 +374,13 @@ public class kNN implements Classifier {
 	    	}
 	    	else {
 	    		d1 = this.dists[i];
-	    		d2 = this.dists[j];
+	    		d2 = this.dists[j];	    		
 	    	}
-	    	if (d1 > d2) return -1;
-    		if (d2 > d1) return 1;
-    		return 0;
+	    	int result = 0;
+	    	if (d1 > d2) result = -1;
+    		if (d2 > d1) result = 1;
+    		if (this.descending) result *= -1;
+    		return result;
 	    }
 	}
 
@@ -315,19 +389,19 @@ public class kNN implements Classifier {
 	 * array a in which a[i] is the index of the ith
 	 * closest training example.
 	 */
-	private int[] kNearest(DataSet d, int k, int[] ex) {
+	private int[] kNearest(int k, int[] ex) {
 		// indices of k best examples
 		int[] indices = new int[k];
 		
 		// record distances to avoid recalculation
-		double[] dists = new double[d.numTrainExs];
+		double[] dists = new double[this.d.numTrainExs];
 		
 		// store indices in priority queue, sorted by distance to ex
     	PriorityQueue<Integer> pq = new PriorityQueue<Integer>(k, new exComparator(ex));
     	
     	// search every example
-    	for (int i = 0; i < d.numTrainExs; i++) {
-    		dists[i] = dist(d.trainEx[i], ex);
+    	for (int i = 0; i < this.d.numTrainExs; i++) {
+    		dists[i] = dist(this.d.trainEx[i], ex);
     		if (pq.size() >= k) {
     			if (dists[i] < dists[pq.peek()]) {
     				pq.remove();
@@ -345,20 +419,6 @@ public class kNN implements Classifier {
     	return indices;
 	}
 	
-	/** Calculates the indices of the k nearest training
-	 * examples in data set d to example ex, assuming that
-	 * ex itself is a training example. Returns an
-	 * array a in which a[i] is the index of the ith
-	 * closest training example.
-	 */
-	private int[] kNearestFromTraining(DataSet d, int k, int[] ex) {
-		int[] indices = new int[k];
-		int[] kNearest = kNearest(d, k+1, ex);
-		for (int i = 0; i < indices.length; i++)
-			indices[i] = kNearest[i+1];
-		return indices;
-	}
-	
 	/** Counts up the votes for the training examples with labels
 	 * at indices listed in array a. Returns 0 or 1.
 	 */
@@ -368,7 +428,7 @@ public class kNN implements Classifier {
     	int len = Math.min(a.length, this.kOpt);
     	for (int k = 0; k < len; k++) {
     		int i = a[k];
-    		if (d.trainLabel[i] == 1)
+    		if (this.d.trainLabel[i] == 1)
     			vote_1 += this.weights[i];
     		else
     			vote_0 += this.weights[i];
@@ -382,18 +442,7 @@ public class kNN implements Classifier {
      * prediction, i.e., 0 or 1.
      */
     public int predict(int[] ex) {
-    	int[] indices = kNearest(this.d, this.kOpt, ex);
-    	return voteCount(indices);
-    }
-    
-    /** A method for predicting the label of a given example <tt>ex</tt>
-     * represented, as in the rest of the code, as an array of values
-     * for each of the attributes.  The method should return a
-     * prediction, i.e., 0 or 1. Assumes that ex is a member of the
-     * training set.
-     */
-    public int predictFromTraining(int[] ex) {
-    	int[] indices = kNearestFromTraining(this.d, this.kOpt, ex);
+    	int[] indices = kNearest(this.kOpt, ex);
     	return voteCount(indices);
     }
 
@@ -411,7 +460,7 @@ public class kNN implements Classifier {
      * group.
     */
     public String author() {
-    	return "dmrd + crm";
+    	return "crm & dmrd";
     }
     
     /** A simple main for testing this algorithm.  This main reads a
