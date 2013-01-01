@@ -15,6 +15,85 @@ public class TestHarness {
 
     static classifier algo;
 
+    /* Computes trial results for a data set, returning an array
+     * where a[i][0] is the training error for the ith trial
+     * and a[i][1] is the error on a cross set for the ith trial. */
+    public static double[][] computeError(DataSet d, int numTrials) {
+    	double[][] results = new double[numTrials][2];
+        Random random = new Random();
+        int crossSize = FOLDNUM * d.numTrainExs / FOLDDENOM;
+        int[][] oEx = new int[d.numTrainExs][];
+        int[] oLabel = new int[d.numTrainExs];
+        for (int i = 0; i < d.numTrainExs; i++) {
+            oEx[i] = d.trainEx[i];
+            oLabel[i] = d.trainLabel[i];
+        }
+
+        d.numTrainExs -= crossSize;
+        d.trainEx = new int[d.numTrainExs][];
+        d.trainLabel = new int[d.numTrainExs];
+
+        for (int trial = 0; trial < numTrials; trial++) {
+
+            /*Shuffle the dataset to get a training/test set for each trial*/
+            for (int i = 0; i < oEx.length; i++) {
+                int swap = random.nextInt(oEx.length - i);
+                int[] tempEx = oEx[swap];
+                oEx[swap] = oEx[oEx.length - i - 1];
+                oEx[oEx.length - i - 1] = tempEx;
+
+                /*Same for labels*/
+                int tempLabel = oLabel[swap];
+                oLabel[swap] = oLabel[oEx.length - i - 1];
+                oLabel[oEx.length - i - 1] = tempLabel;
+            }
+
+            for (int i = 0; i < d.numTrainExs; i++) {
+                d.trainEx[i] = oEx[i];
+                d.trainLabel[i] = oLabel[i];
+            }
+
+            Classifier c;
+            switch (algo) {
+                case DT:
+                    c = new DecisionTree(d, false);
+                    break;
+                case DF:
+                    c = new DecisionForest(d, numTrees);
+                    break;
+                case KNN:
+                    c = new kNN(d);
+                    break;
+                case SLNN:
+                    c = new SingleLayerNeuralNet(d);
+                    break;
+                case MLNN:
+                    c = new MultiLayerNeuralNet(d);
+                    break;
+                default:
+                    c = new BaselineClassifier(d);
+            }
+
+            int correct = 0;
+            for (int ex = 0; ex < d.numTrainExs; ex++) {
+                if (c.predict(d.trainEx[ex]) == d.trainLabel[ex])
+                    correct++;
+            }
+            results[trial][0] = 1.0 - (100.0*correct/d.numTrainExs);
+
+            correct = 0;
+            for (int ex = oEx.length - crossSize; ex < oEx.length; ex++) {
+                if (c.predict(oEx[ex]) == oLabel[ex])
+                    correct++;
+            }
+            
+            results[trial][1] = 1.0 - (100.0*correct / crossSize);
+        }
+
+        return results;
+    }
+    
+    /* Prints trial and cross error on data set d. */
     public static void runTrials(DataSet d, int numTrials) {
         Random random = new Random();
         int crossSize = FOLDNUM * d.numTrainExs / FOLDDENOM;
@@ -125,7 +204,7 @@ public class TestHarness {
         } else if (argv[1].equals("knn")) {
             System.out.println("Using k-nearest-neighbor");
             algo = classifier.KNN;
-            d = new NumericDataSet(argv[0]);
+            d = new BinaryDataSet(argv[0]);
         } else if (argv[1].equals("slnn")) {
             System.out.println("Using single layer neural net");
             algo = classifier.SLNN;
