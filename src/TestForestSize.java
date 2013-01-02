@@ -18,10 +18,12 @@ public class TestForestSize {
 		int numTrials = Integer.parseInt(argv[3]);
 		
 		System.out.println("Data set contains " + d.numTrainExs + " examples.");
-		System.out.println("[forest size], [training error], [cross-set error]");
+		System.out.println("[forest size], [trialNum], [training error], [cross-set error]");
 		for (int i = forestMin; i <= forestMax; i++) {
 			double[][] error = TestHarness.computeError(d, numTrials);
-			System.out.printf("%d, %f, %f\n", i, error[0], error[1]);
+			for (int j = 0; j < numTrials; j++) {
+				System.out.printf("%d, %d, %f, %f\n", i, j, error[j][0], error[j][1]);
+			}
 		}
 	}
 }
