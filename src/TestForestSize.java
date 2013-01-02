@@ -1,7 +1,6 @@
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-
 public class TestForestSize {
 	public static void main(String[] argv) throws FileNotFoundException, IOException {
 		if (argv.length < 4) {
@@ -19,10 +18,12 @@ public class TestForestSize {
 		
 		System.out.println("Data set contains " + d.numTrainExs + " examples.");
 		System.out.println("[forest size], [trialNum], [training error], [cross-set error]");
-		for (int i = forestMin; i <= forestMax; i++) {
-			double[][] error = TestHarness.computeError(d, numTrials);
+		for (int forestSize = forestMin; forestSize <= forestMax; forestSize++) {
+			// data set from filestem
+			d = new DiscreteDataSet(argv[0]);
+			double[][] error = TestHarness.computeError(d, numTrials, TestHarness.classifier.DF, forestSize, false);
 			for (int j = 0; j < numTrials; j++) {
-				System.out.printf("%d, %d, %f, %f\n", i, j, error[j][0], error[j][1]);
+				System.out.printf("%d, %d, %f, %f\n", forestSize, j, error[j][0], error[j][1]);
 			}
 		}
 	}

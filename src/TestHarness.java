@@ -17,8 +17,13 @@ public class TestHarness {
 
     /* Computes trial results for a data set, returning an array
      * where a[i][0] is the training error for the ith trial
-     * and a[i][1] is the error on a cross set for the ith trial. */
-    public static double[][] computeError(DataSet d, int numTrials) {
+     * and a[i][1] is the error on a cross set for the ith trial.
+     * Uses an algorithm specified by algo, and allows the user
+     * to set the forest size or randomization of decision forests
+     * and decision trees (respectively); these arguments are ignored
+     * if a different algorithm is used. */
+    public static double[][] computeError(DataSet d, int numTrials, classifier algo,
+    		                                    int numTrees, boolean rand) {
     	double[][] results = new double[numTrials][2];
         Random random = new Random();
         int crossSize = FOLDNUM * d.numTrainExs / FOLDDENOM;
@@ -79,7 +84,7 @@ public class TestHarness {
                 if (c.predict(d.trainEx[ex]) == d.trainLabel[ex])
                     correct++;
             }
-            results[trial][0] = 1.0 - (100.0*correct/d.numTrainExs);
+            results[trial][0] = 100.0 - (100.0*correct/d.numTrainExs);
 
             correct = 0;
             for (int ex = oEx.length - crossSize; ex < oEx.length; ex++) {
@@ -87,7 +92,7 @@ public class TestHarness {
                     correct++;
             }
             
-            results[trial][1] = 1.0 - (100.0*correct / crossSize);
+            results[trial][1] = 100.0 - (100.0*correct / crossSize);
         }
 
         return results;
