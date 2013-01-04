@@ -10,12 +10,12 @@ import java.util.Random;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Collections;
-public class DecisionForest implements Classifier{
+public class Adaboost implements Classifier{
 
     Random random;
     DecisionTree[] forest;
 
-    public DecisionForest(DataSet data, int forestSize) {
+    public Adaboost(DataSet data, int forestSize) {
         random = new Random();
 
         forest = new DecisionTree[forestSize];
@@ -60,7 +60,7 @@ public class DecisionForest implements Classifier{
 
             //System.out.println(numFeatures + ":" + numTrain);
             forest[cTree] = new DecisionTree(data, treeAttributes,
-                                    treeExamples, true);
+                                    treeExamples, false);
             //forest[cTree] = new DecisionTree(data, treeAttributes);
         }
     }
@@ -80,7 +80,7 @@ public class DecisionForest implements Classifier{
      * appropriate for posting on the class website.
      */
     public String algorithmDescription() {
-        return "Random forest - combines bagging with unpruned random decision trees.  Tree chooses best among subset of attributes to split on at each node.";
+        return "Basic decision forest - uses our DecisionTree";
     }
 
     /** This method should return the "author" of this program as you
@@ -89,7 +89,7 @@ public class DecisionForest implements Classifier{
      * group.
      */
     public String author() {
-        return "crm & dmrd";
+        return "dmrd";
     }
 
     /*
@@ -112,12 +112,58 @@ public class DecisionForest implements Classifier{
          */
         DiscreteDataSet d = new DiscreteDataSet(filestem);
 
+        /*
+         * Do the Knuth Shuffle!  It sounds like more fun than it is!
+         */
+        //Set seed to constant to get the same result multiple times
+        Random random = new Random();
+        for (int i = 0; i < d.numTrainExs; i++) {
+            int swap = random.nextInt(d.numTrainExs - i);
+            int[] tempEx = d.trainEx[swap];
+            d.trainEx[swap] = d.trainEx[d.numTrainExs - i - 1];
+            d.trainEx[d.numTrainExs - i - 1] = tempEx;
+            int tempLabel = d.trainLabel[swap];
+            d.trainLabel[swap] = d.trainLabel[d.numTrainExs - i - 1];
+            d.trainLabel[d.numTrainExs - i - 1] = tempLabel;
+        }
+
+        int crossSize = d.numTrainExs/4;
+
+        int[][] crossEx = new int[crossSize][];
+        int[] crossLabel = new int[crossSize];
+
+        int[][] dEx = new int[d.numTrainExs - crossSize][];
+        int[] dLabel = new int[d.numTrainExs - crossSize];
+
+        for (int i = 0; i < d.numTrainExs - crossSize; i++) {
+            dEx[i] = d.trainEx[i];
+            dLabel[i] = d.trainLabel[i];
+        }
+
+        for (int i = 0; i < crossSize; i++) {
+            crossEx[i] = d.trainEx[d.numTrainExs - i - 1];
+            crossLabel[i] = d.trainLabel[d.numTrainExs - i - 1];
+        }
+
+        //Modify original dataset
+        d.numTrainExs = dEx.length;
+        d.trainEx = dEx;
+        d.trainLabel = dLabel;
+
         System.out.println("Training classifier on " + d.numTrainExs
                 + " examples");
 
         Classifier c = new DecisionForest(d,Integer.parseInt(argv[1]));
 
-        System.out.println("Running on test set...");
-        d.printTestPredictions(c, filestem);
+        System.out.println("Testing classifier on " + crossEx.length
+                + " examples");
+        int correct = 0;
+        for (int ex = 0; ex < crossEx.length; ex++) {
+            if (c.predict(crossEx[ex]) == crossLabel[ex])
+                correct++;
+        }
+        System.out.println("Performance on cross set: "
+                + (100*correct / crossEx.length) + "%");
     }
+
 }

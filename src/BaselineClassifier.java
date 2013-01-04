@@ -69,7 +69,7 @@ public class BaselineClassifier implements Classifier {
 
         System.out.println((100*correct/d.numTrainExs) + "%");
 
-	//d.printTestPredictions(c, filestem);
+        d.printTestPredictions(c, filestem);
     }
 
 }
