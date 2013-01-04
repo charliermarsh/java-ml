@@ -22,7 +22,7 @@ public class TestForestSize {
 		for (int forestSize = forestMin; forestSize <= forestMax; forestSize += increment) {
 			// data set from filestem
 			d = new DiscreteDataSet(argv[0]);
-			double[][] error = TestHarness.computeError(d, numTrials, TestHarness.classifier.DF, forestSize, false);
+			double[][] error = TestHarness.computeError(d, numTrials, TestHarness.classifier.DF, forestSize, false, 0, 0);
 			for (int j = 0; j < numTrials; j++) {
 				System.out.printf("%d, %d, %f, %f\n", forestSize, j, error[j][0], error[j][1]);
 			}

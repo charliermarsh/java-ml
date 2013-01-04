@@ -23,7 +23,7 @@ public class TestHarness {
      * and decision trees (respectively); these arguments are ignored
      * if a different algorithm is used. */
     public static double[][] computeError(DataSet d, int numTrials, classifier algo,
-    		                                    int numTrees, boolean rand) {
+    		                                    int numTrees, boolean rand, int numIters, int k) {
     	double[][] results = new double[numTrials][2];
         Random random = new Random();
         int crossSize = FOLDNUM * d.numTrainExs / FOLDDENOM;
@@ -67,7 +67,7 @@ public class TestHarness {
                     c = new DecisionForest(d, numTrees);
                     break;
                 case KNN:
-                    c = new kNN(d);
+                    c = new kNN(d, k, numIters);
                     break;
                 case SLNN:
                     c = new SingleLayerNeuralNet(d);
@@ -197,32 +197,33 @@ public class TestHarness {
 
         DataSet d;
         if (argv[1].equals("dt")) {
-            System.out.println("Using decision tree");
+            System.out.print("Using decision tree");
             algo = classifier.DT;
             d = new DiscreteDataSet(argv[0]);
         } else if (argv[1].equals("df")) {
-            System.out.println("Using decision forest");
+            System.out.print("Using decision forest");
             if (argv.length == 4) { numTrees = Integer.parseInt(argv[3]); }
             algo = classifier.DF;
             //d = new DiscreteDataSet(argv[0]);
             d = new DiscreteDataSet(argv[0]);
         } else if (argv[1].equals("knn")) {
-            System.out.println("Using k-nearest-neighbor");
+            System.out.print("Using k-nearest-neighbor");
             algo = classifier.KNN;
             d = new BinaryDataSet(argv[0]);
         } else if (argv[1].equals("slnn")) {
-            System.out.println("Using single layer neural net");
+            System.out.print("Using single layer neural net");
             algo = classifier.SLNN;
             d = new BinaryDataSet(argv[0]);
         } else if (argv[1].equals("mlnn")) {
-            System.out.println("Using multilayer neural net");
+            System.out.print("Using multilayer neural net");
             algo = classifier.MLNN;
             d = new BinaryDataSet(argv[0]);
         } else {
-            System.out.println("Using baseline classifier");
+            System.out.print("Using baseline classifier");
             algo = classifier.BASE;
             d = new DataSet(argv[0]);
         }
+        System.out.println(" on " + argv[0]);
 
         runTrials(d, Integer.parseInt(argv[2]));
     }

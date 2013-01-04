@@ -38,8 +38,24 @@ public class kNN implements Classifier {
 			this.instanceWeights[i] = 1.0;
 		
 		this.kOpt = optimizeK(this.kMin, this.kMax);
-		forwardsSelection();
-		//traininstanceWeights(100000);		
+		backwardsElimination();
+		traininstanceWeights(100000);		
+	}
+	
+	/** Constructor for the kNN machine learning algorithm.
+	 *  Mainly used for testing the weight training heuristic.
+	 */
+	public kNN(DataSet d, int kOpt, int T) {
+		/* Setup array labelledData so that it contains all the training
+		   data attributes along with that example's label. */
+		this.d = d;
+		this.elimAttr = new boolean[this.d.numAttrs];
+		this.instanceWeights = new double[this.d.numTrainExs];
+		for (int i = 0; i < this.instanceWeights.length; i++)
+			this.instanceWeights[i] = 1.0;
+		
+		this.kOpt = kOpt;
+		traininstanceWeights(T);		
 	}
 	
 	/** Constructor for the kNN machine learning algorithm.
@@ -171,7 +187,7 @@ public class kNN implements Classifier {
 				}
 			}
 		}
-		System.out.println("instanceWeights trained.");
+		//System.out.println("instanceWeights trained.");
 	}
 	
 	/** Uses backwards elimination to remove attributes from consideration
@@ -264,7 +280,7 @@ public class kNN implements Classifier {
 				sum++;
 			}
 		}
-		System.out.printf("%d attributes removed.\n", sum);
+		//System.out.printf("%d attributes removed.\n", sum);
 	}
 	
 	/** Uses forward selection to add attributes to a distance function,
@@ -362,7 +378,7 @@ public class kNN implements Classifier {
 				this.elimAttr[minErrorIndex] = false;
 				dists = minErrorDists;
 				attributeAdded = true;
-				System.out.println("Added attribute " + minErrorIndex);
+				//System.out.println("Added attribute " + minErrorIndex);
 			}
 		} while (attributeAdded);
 	}
@@ -425,7 +441,7 @@ public class kNN implements Classifier {
 				minK = k;
 			}
 		}
-		System.out.printf("Optimal k chosen at k = %d\n", minK);
+		//System.out.printf("Optimal k chosen at k = %d\n", minK);
 		return minK;
 	}
 	
