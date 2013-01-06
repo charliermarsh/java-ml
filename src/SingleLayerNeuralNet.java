@@ -12,6 +12,15 @@ public class SingleLayerNeuralNet implements Classifier {
 	/* number of attributes in data set. */
 	private final int N;
 	
+	/** Calculates the error on the training examples of
+	 * data set d. */
+	private double error(DataSet d) {
+		double sum = 0.0;
+		for (int i = 0; i < d.numTrainExs; i++)
+			sum += Math.abs(d.trainLabel[i] - predict(d.trainEx[i]));
+		return sum/d.numTrainExs;
+	}
+	
 	/** Trains the neural network on an example ex by using
 	 * the back propagation technique to adjust the net's weights.
 	 * Example ex is known to be of classification label.
@@ -21,7 +30,7 @@ public class SingleLayerNeuralNet implements Classifier {
 		if (output == label) return;
 		
 		for (int i = 0; i < this.N; i++) {
-			double delta = this.learning_rate*(output-label)*ex[i];
+			double delta = this.learning_rate*(label-output)*ex[i];
 			this.weights[i] += delta;
 		}
 	}
@@ -34,11 +43,15 @@ public class SingleLayerNeuralNet implements Classifier {
 		this.N = this.d.numAttrs;
 		// N+1 perceptrons, with perceptron N = output
 		this.weights = new double[this.N];
+		double epsilon = 0.05;
+		int maxRuns = 100000;
 		
+		int runs = 0;
 		// train neural net on each training example
-		for (int t = 0; t < 10000; t++) {
+		while (runs < maxRuns && error(this.d) > epsilon) {
 			for (int i = 0; i < this.d.numTrainExs; i++)
 				back_prop(this.d.trainEx[i], this.d.trainLabel[i]);
+			runs++;
 		}
 	}
 
@@ -49,11 +62,9 @@ public class SingleLayerNeuralNet implements Classifier {
      * as an array of binary values.
      */
     public int predict(int[] ex) {
-    	double sum = 0;
-    	for (int i = 0; i < this.N; i++) {
-    		double factor = (ex[i]==0)? -1 : 1;
-    		sum += factor*weights[i];
-    	}
+    	double sum = 0.0;
+    	for (int i = 0; i < this.N; i++)
+    		sum += weights[i]*ex[i];
     	if (sum > 0) return 1;
     	return 0;
     }
