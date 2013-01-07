@@ -1,14 +1,17 @@
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Arrays;
 
 public class MultiLayerNeuralNet implements Classifier {
 	/* algorithm's learning rate. */
-	private final double learning_rate = 0.5;
+	private final double learningRate = 0.5;
+	/* algorithm's momentum parameter. */
+	private final double momentumFactor = 0.1;
 	/* weights[i][j] is the weight on edge from node i -> j. 
 	 * as a special case, weights[i][i] is the threshold value
 	 * of the perceptron i. */
-	private final double[][] weights;
+	private double[][] weights;
 	/* outgoingEdges[i] is a list of edges from i. */
 	private final LinkedList<Integer>[] outgoingEdges;
 	/* incomingEdges[i] is a list of edges to i. */
@@ -48,18 +51,31 @@ public class MultiLayerNeuralNet implements Classifier {
 	}
 	
 	/**
-	 * Trains the neural network on every example in data set d.
+	 * Trains the neural network on every example in data set d
+	 * using previous deltas prevDelta.
 	 */
-	private void backProp(DataSet d) {
+	private void backProp(DataSet d, double[] prevDelta) {
 		for (int i = 0; i < d.numTrainExs; i++)
-			backProp(d.trainEx[i], d.trainLabel[i]);
+			backProp(d.trainEx[i], d.trainLabel[i], prevDelta);
 	}
 	
 	/** Trains the neural network on an example ex by using
 	 * the back propagation technique to adjust the net's weights.
-	 * Example ex is known to be of classification label.
+	 * Example ex is known to be of classification label. Uses
+	 * 0 for all previous deltas.
 	 */
 	private void backProp(int[] ex, int label) {
+		backProp(ex, label, new double[this.numNodes]);
+	}
+	
+	/** Trains the neural network on an example ex by using
+	 * the back propagation technique to adjust the net's weights.
+	 * Example ex is known to be of classification label. It is
+	 * assumed that prevDelta are the deltas for time t-1, used
+	 * to add momentum to the gradient descent calculation. Stores
+	 * the calculated deltas in prevDelta for future use.
+	 */
+	private void backProp(int[] ex, int label, double[] prevDelta) {
 		// output of each node
 		double[] a = new double[this.numNodes];
 		// input to each node
@@ -95,15 +111,19 @@ public class MultiLayerNeuralNet implements Classifier {
 				for (int dest : this.outgoingEdges[src]) {
 					sum += this.weights[src][dest]*delta[dest];
 				}
+				// compute delta and add momentum factor
 				delta[src] = gPrime(a[src])*sum;
+				delta[src] += this.momentumFactor*prevDelta[src];
+				// store momentum for future use
+				prevDelta[src] = delta[src];
 			}
 		}
 		
 		// adjust weights
 		for (int i = 0; i < this.weights.length; i++) {
-			for (int j = 0; j < this.weights.length; j++) {
-				if (this.weights[i][j] == 0) continue;
-				this.weights[i][j] += this.learning_rate*a[i]*delta[j];
+			for (int j = i+1; j < this.weights.length; j++) {
+				this.weights[i][j] += this.learningRate*a[i]*delta[j];
+				this.weights[j][i] = this.weights[i][j];
 			}
 		}
 	}
@@ -121,6 +141,7 @@ public class MultiLayerNeuralNet implements Classifier {
 		for (int i = 0; i < this.weights.length; i++) {
 			for (int j = i+1; j < this.weights.length; j++) {
 				this.weights[i][j] = randomWeight();
+				this.weights[j][i] = this.weights[i][j];
 			}
 		}
 	}
@@ -174,20 +195,37 @@ public class MultiLayerNeuralNet implements Classifier {
 		// train neural net on each training example
 		// run until epsilon threshold error is breached
 		double epsilon = 0.05;
+		double minError = Double.MAX_VALUE;
 		double lastError = Double.MAX_VALUE;
+		double[][] bestWeights = new double[this.weights.length][this.weights.length];
+		double[] prevDelta = new double[this.numNodes];
 		int maxRuns = 100;
 		for (int runs = 0; runs < maxRuns; runs++) {
-			backProp(this.d);
+			// run back prop
+			backProp(this.d, prevDelta);
 			double error = error(this.d);
-			if (error < epsilon) 
+			// if error is sufficiently low, cut-off
+			if (error < epsilon) {
+				bestWeights = this.weights;
 				break;
-			if (error >= lastError) {
+			}
+			// if error has not improved, reset
+			else if (error >= lastError) {
 				randomizeWeights();
 				lastError = Double.MAX_VALUE;
 			}
-			else
+			else {
 				lastError = error;
+				// if error is best seen, remember weights
+				if (error < minError) {
+					minError = error;
+					for (int i = 0; i < this.weights.length; i++)
+						System.arraycopy(this.weights[i], 0, bestWeights[i], 0, this.weights.length);
+				}
+			}
 		}
+		// assign permanent weights to the best weights observed
+		this.weights = bestWeights;
 	}
 
     /** A method for predicting the label of a given example <tt>ex</tt>
