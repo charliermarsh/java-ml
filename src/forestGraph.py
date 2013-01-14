@@ -42,5 +42,5 @@ if (cTrees > 0):
     plt.legend(handles,labels,loc=4)
     #plt.ylim(0,100)
 
-    plt.show()
-    #plt.savefig(base+"plot")
+    #plt.show()
+    plt.savefig(sys.argv[1]+"-plot.png")

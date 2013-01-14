@@ -98,6 +98,84 @@ public class TestHarness {
         return results;
     }
     
+    /*
+     * Run hold one out trials for the listed algorithm and dataset.  Takes
+     * a really, really long time
+     */
+    public static double holdOneOut(DataSet d, classifier algo, int numTrees) {
+        Random random = new Random();
+        //System.out.println("Running hold one out tests...");
+        /*Copy everything over to save it*/
+        int[][] oEx = new int[d.numTrainExs][];
+        int[] oLabel = new int[d.numTrainExs];
+        for (int i = 0; i < d.numTrainExs; i++) {
+            oEx[i] = d.trainEx[i];
+            oLabel[i] = d.trainLabel[i];
+        }
+
+        d.numTrainExs -= 1; //Holding out out each time
+        d.trainEx = new int[d.numTrainExs][];
+        d.trainLabel = new int[d.numTrainExs];
+
+        //Copy over initially - leave first element out
+        for (int i = 0; i < d.numTrainExs; i++) {
+            d.trainEx[i] = oEx[i+1];
+            d.trainLabel[i] = oLabel[i+1];
+        }
+
+        double totalCorrect = 0;
+        /*Go through and hold out each example*/
+        for (int ex = 0; ex < oEx.length; ex++) {
+
+            Classifier c;
+            switch (algo) {
+                case DT:
+                    c = new DecisionTree(d, false);
+                    break;
+                case DF:
+                    c = new DecisionForest(d, numTrees);
+                    break;
+                case KNN:
+                    c = new kNN(d);
+                    break;
+                case SLNN:
+                    c = new SingleLayerNeuralNet(d);
+                    break;
+                case MLNN:
+                    c = new MultiLayerNeuralNet(d);
+                    break;
+                default:
+                    c = new BaselineClassifier(d);
+            }
+
+            if (c.predict(oEx[ex]) == oLabel[ex]) {
+                //System.out.println(ex + ": X");
+                totalCorrect++;
+            }/* else {*/
+                //System.out.println(ex + ": -");
+            /*}*/
+
+            //Advance to next hold out one
+            if (ex < oEx.length - 1) {
+                d.trainEx[ex] = oEx[ex];
+                d.trainLabel[ex] = oLabel[ex];
+            }
+            if (ex < oEx.length - 2) {
+                d.trainEx[ex+1] = oEx[ex+2];
+                d.trainLabel[ex+1] = oLabel[ex+2];
+            }
+        }
+
+        System.out.println("Hold one out performance: "
+                + (100.0*totalCorrect / oEx.length)  + "%");
+        d.numTrainExs += 1;
+        d.trainEx = oEx;
+        d.trainLabel = oLabel;
+
+        return (100.0 * totalCorrect / oEx.length);
+    }
+
+
     /* Prints trial and cross error on data set d. */
     public static void runTrials(DataSet d, int numTrials) {
         Random random = new Random();
@@ -189,9 +267,11 @@ public class TestHarness {
     public static void main(String argv[])
         throws FileNotFoundException, IOException {
 
-        if (argv.length < 3) {
-            System.err.println("argument: filestem classifier #runs classifierArgs");
+        if (argv.length < 4) {
+            System.err.println("argument: filestem classifier testType #runs classifierArgs");
             System.err.println("Classifier options: dt, df, knn, slnn, mlnn");
+            System.err.println("testType options: hoo (hold one out), cv (cross validation)");
+            System.err.println("Hold one out only uses classifier and filestem (and classifier args)");
             return;
         }
 
@@ -202,9 +282,11 @@ public class TestHarness {
             d = new DiscreteDataSet(argv[0]);
         } else if (argv[1].equals("df")) {
             System.out.print("Using decision forest");
-            if (argv.length == 4) { numTrees = Integer.parseInt(argv[3]); }
+            if (argv.length == 6) {
+                System.out.print(" with " + argv[5] + " trees");
+                numTrees = Integer.parseInt(argv[5]);
+            }
             algo = classifier.DF;
-            //d = new DiscreteDataSet(argv[0]);
             d = new DiscreteDataSet(argv[0]);
         } else if (argv[1].equals("knn")) {
             System.out.print("Using k-nearest-neighbor");
@@ -225,6 +307,10 @@ public class TestHarness {
         }
         System.out.println(" on " + argv[0]);
 
-        runTrials(d, Integer.parseInt(argv[2]));
+        if (argv[2].equals("cv")) {
+            runTrials(d, Integer.parseInt(argv[2]));
+        } else {
+            holdOneOut(d, algo, numTrees);
+        }
     }
 }
