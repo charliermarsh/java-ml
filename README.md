@@ -19,4 +19,4 @@ TestHarness.java can be used to test any Classifier on any DataSet through the u
 
 ## Contact
 
-For any questions, please reach out to David Dohan (dmrd@princeton.edu) or Charlie Marsh (crmarsh@princeton.edu).
+For any questions, please reach out to David Dohan (ddohan@princeton.edu) or Charlie Marsh (crmarsh@princeton.edu).
