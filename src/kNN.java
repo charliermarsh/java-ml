@@ -6,6 +6,7 @@ import java.util.PriorityQueue;
 import java.util.Random;
 
 public class kNN implements Classifier {
+	// commmit test
 	
 	// data set of training examples
 	private DataSet d;
