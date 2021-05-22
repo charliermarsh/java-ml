@@ -170,8 +170,13 @@ public class MultiLayerNeuralNet implements Classifier {
 		createLayers(numHidden);		
 		linkLayers(numHidden);
 
-		// train neural net on each training example
-		// run until epsilon threshold error is breached
+		train();
+	}
+
+	/** train neural net on each training example
+		run until epsilon threshold error is breached
+	 */
+	private void train() {
 		double epsilon = 0.05;
 		double minError = Double.MAX_VALUE;
 		double lastError = Double.MAX_VALUE;
