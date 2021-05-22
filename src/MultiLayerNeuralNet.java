@@ -162,35 +162,13 @@ public class MultiLayerNeuralNet implements Classifier {
 		// create and initialize list of edges
 		this.incomingEdges = (LinkedList<Integer>[]) new LinkedList[this.numNodes];
 		this.outgoingEdges = (LinkedList<Integer>[]) new LinkedList[this.numNodes];
-		for (int i = 0; i < this.numNodes; i++) {
-			this.incomingEdges[i] = new LinkedList<Integer>();
-			this.outgoingEdges[i] = new LinkedList<Integer>();
-		}
+		initEdges();		
 		// number of layers to be included
 		int numLayers = 3;
-		this.layer = (LinkedList<Integer>[]) new LinkedList[numLayers];
-		for (int i = 0; i < numLayers; i++)
-			this.layer[i] = new LinkedList<Integer>();
-
-		/* Create first layer and links to hidden layer. */
-		for (int i = 0; i < this.N; i++) {
-			this.layer[0].add(i);
-			// add incoming and outgoing edges
-			for (int j = this.N; j < this.N + numHidden; j++) {
-				this.outgoingEdges[i].add(j);
-				this.incomingEdges[j].add(i);
-			}
-		}
-		
-		/* Create second layer and links to third layer. */
-		for (int i = this.N; i < this.N + numHidden; i++) {
-			this.layer[1].add(i);
-			this.incomingEdges[this.numNodes - 1].add(i);
-			this.outgoingEdges[i].add(this.numNodes - 1);
-		}
-		
-		/* Create list of third layer (output node). */ 
-		this.layer[2].add(this.numNodes - 1);
+		this.layer = (LinkedList<Integer>[]) new LinkedList[numLayers];		
+		initLayers(numLayers);
+		createLayers(numHidden);		
+		linkLayers(numHidden);
 
 		// train neural net on each training example
 		// run until epsilon threshold error is breached
@@ -226,6 +204,48 @@ public class MultiLayerNeuralNet implements Classifier {
 		}
 		// assign permanent weights to the best weights observed
 		this.weights = bestWeights;
+	}
+
+	private void linkLayers(int numHidden) {
+		/* Create first layer and links to hidden layer. */
+		for (int i = 0; i < this.N; i++) {
+			// add incoming and outgoing edges
+			for (int j = this.N; j < this.N + numHidden; j++) {
+				this.outgoingEdges[i].add(j);
+				this.incomingEdges[j].add(i);
+			}
+		}
+		
+		/* Create second layer and links to third layer. */
+		for (int i = this.N; i < this.N + numHidden; i++) {
+			this.incomingEdges[this.numNodes - 1].add(i);
+			this.outgoingEdges[i].add(this.numNodes - 1);
+		}
+	}
+
+	private void createLayers(int numHidden) {
+		/* Create first layer and links to hidden layer. */
+		for (int i = 0; i < this.N; i++) {
+			this.layer[0].add(i);
+		}
+		/* Create second layer and links to third layer. */
+		for (int i = this.N; i < this.N + numHidden; i++) {
+			this.layer[1].add(i);
+		}
+		/* Create list of third layer (output node). */ 
+		this.layer[2].add(this.numNodes - 1);
+	}
+
+	private void initLayers(int numLayers) {
+		for (int i = 0; i < numLayers; i++)
+			this.layer[i] = new LinkedList<Integer>();
+	}
+
+	private void initEdges() {
+		for (int i = 0; i < this.numNodes; i++) {
+			this.incomingEdges[i] = new LinkedList<Integer>();
+			this.outgoingEdges[i] = new LinkedList<Integer>();
+		}
 	}
 
     /** A method for predicting the label of a given example <tt>ex</tt>
