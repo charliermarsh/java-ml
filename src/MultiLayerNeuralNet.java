@@ -202,13 +202,17 @@ public class MultiLayerNeuralNet implements Classifier {
 				// if error is best seen, remember weights
 				if (error < minError) {
 					minError = error;
-					for (int i = 0; i < this.weights.length; i++)
-						System.arraycopy(this.weights[i], 0, bestWeights[i], 0, this.weights.length);
+					updateWeights(bestWeights);
 				}
 			}
 		}
 		// assign permanent weights to the best weights observed
 		this.weights = bestWeights;
+	}
+
+	private void updateWeights(double[][] bestWeights) {
+		for (int i = 0; i < this.weights.length; i++)
+			System.arraycopy(this.weights[i], 0, bestWeights[i], 0, this.weights.length);
 	}
 
 	private void linkLayers(int numHidden) {
