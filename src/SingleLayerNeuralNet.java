@@ -25,7 +25,7 @@ public class SingleLayerNeuralNet implements Classifier {
 	 * the back propagation technique to adjust the net's weights.
 	 * Example ex is known to be of classification label.
 	 */
-	private void back_prop(int[] ex, int label) {
+	private void backPropagation(int[] ex, int label) {
 		int output = predict(ex);
 		if (output == label) return;
 		
@@ -55,7 +55,7 @@ public class SingleLayerNeuralNet implements Classifier {
 		int runs = 0;
 		while (runs < maxRuns && error(this.d) > epsilon) {
 			for (int i = 0; i < this.d.numTrainExs; i++)
-				back_prop(this.d.trainEx[i], this.d.trainLabel[i]);
+				backPropagation(this.d.trainEx[i], this.d.trainLabel[i]);
 			runs++;
 		}
 	}
