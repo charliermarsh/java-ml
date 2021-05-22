@@ -87,22 +87,30 @@ public class MultiLayerNeuralNet implements Classifier {
 		for (int i = 0; i < this.N; i++)
 			output[i] = ex[i];
 		
-		// compute outputs by propagating inputs forward
-		for (int l = 1; l < this.layer.length; l++) {
-			for (int dest : this.layer[l]) {
-				for (int src : this.incomingEdges[dest]) {
-					input[dest] += this.weights[src][dest]*output[src];
-				}
-				// subtract threshold value
-				input[dest] -= this.weights[dest][dest];
-				output[dest] = g(input[dest]);
-			}
-		}
+		forwardPass(output, input);
 		// return if accurate prediction
 		if (predict(output[this.numNodes - 1]) == label) return;
 		
-		// compute deltas by propagating backward
-		// degin with delta of output layer as base case
+		backwardPass(label, prevDelta, output, delta);
+		
+		adjustWeights(output, delta);
+	}
+
+	/** adjust weights
+	 */
+	private void adjustWeights(double[] output, double[] delta) {
+		for (int i = 0; i < this.weights.length; i++) {
+			for (int j = i+1; j < this.weights.length; j++) {
+				this.weights[i][j] += this.learningRate*output[i]*delta[j];
+				this.weights[j][i] = this.weights[i][j];
+			}
+		}
+	}
+
+	/** compute deltas by propagating backward
+		degin with delta of output layer as base case
+	 */
+	private void backwardPass(int label, double[] prevDelta, double[] output, double[] delta) {
 		delta[this.numNodes - 1] = 
 				gPrime(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
 		for (int l = this.layer.length - 2; l >= 0; l--) {
@@ -118,12 +126,19 @@ public class MultiLayerNeuralNet implements Classifier {
 				prevDelta[src] = delta[src];
 			}
 		}
-		
-		// adjust weights
-		for (int i = 0; i < this.weights.length; i++) {
-			for (int j = i+1; j < this.weights.length; j++) {
-				this.weights[i][j] += this.learningRate*output[i]*delta[j];
-				this.weights[j][i] = this.weights[i][j];
+	}
+
+	/** compute outputs by propagating inputs forward
+	 */
+	private void forwardPass(double[] output, double[] input) {
+		for (int l = 1; l < this.layer.length; l++) {
+			for (int dest : this.layer[l]) {
+				for (int src : this.incomingEdges[dest]) {
+					input[dest] += this.weights[src][dest]*output[src];
+				}
+				// subtract threshold value
+				input[dest] -= this.weights[dest][dest];
+				output[dest] = g(input[dest]);
 			}
 		}
 	}
