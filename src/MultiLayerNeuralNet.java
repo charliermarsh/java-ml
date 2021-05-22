@@ -77,34 +77,34 @@ public class MultiLayerNeuralNet implements Classifier {
 	 */
 	private void backPropagation(int[] ex, int label, double[] prevDelta) {
 		// output of each node
-		double[] a = new double[this.numNodes];
+		double[] output = new double[this.numNodes];
 		// input to each node
-		double[] in = new double[this.numNodes];
+		double[] input = new double[this.numNodes];
 		// delta for adjusting each edge weight
 		double[] delta = new double[this.numNodes];
 		
 		// first N nodes are input nodes
 		for (int i = 0; i < this.N; i++)
-			a[i] = ex[i];
+			output[i] = ex[i];
 		
 		// compute outputs by propagating inputs forward
 		for (int l = 1; l < this.layer.length; l++) {
 			for (int dest : this.layer[l]) {
 				for (int src : this.incomingEdges[dest]) {
-					in[dest] += this.weights[src][dest]*a[src];
+					input[dest] += this.weights[src][dest]*output[src];
 				}
 				// subtract threshold value
-				in[dest] -= this.weights[dest][dest];
-				a[dest] = g(in[dest]);
+				input[dest] -= this.weights[dest][dest];
+				output[dest] = g(input[dest]);
 			}
 		}
 		// return if accurate prediction
-		if (predict(a[this.numNodes - 1]) == label) return;
+		if (predict(output[this.numNodes - 1]) == label) return;
 		
 		// compute deltas by propagating backward
 		// degin with delta of output layer as base case
 		delta[this.numNodes - 1] = 
-				gPrime(a[this.numNodes - 1])*(label - (int)Math.round(a[this.numNodes - 1])); 
+				gPrime(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
 		for (int l = this.layer.length - 2; l >= 0; l--) {
 			for (int src : this.layer[l]) {
 				double sum = 0;
@@ -112,7 +112,7 @@ public class MultiLayerNeuralNet implements Classifier {
 					sum += this.weights[src][dest]*delta[dest];
 				}
 				// compute delta and add momentum factor
-				delta[src] = gPrime(a[src])*sum;
+				delta[src] = gPrime(output[src])*sum;
 				delta[src] += this.momentumFactor*prevDelta[src];
 				// store momentum for future use
 				prevDelta[src] = delta[src];
@@ -122,7 +122,7 @@ public class MultiLayerNeuralNet implements Classifier {
 		// adjust weights
 		for (int i = 0; i < this.weights.length; i++) {
 			for (int j = i+1; j < this.weights.length; j++) {
-				this.weights[i][j] += this.learningRate*a[i]*delta[j];
+				this.weights[i][j] += this.learningRate*output[i]*delta[j];
 				this.weights[j][i] = this.weights[i][j];
 			}
 		}
