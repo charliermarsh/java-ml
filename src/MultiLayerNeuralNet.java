@@ -38,15 +38,15 @@ public class MultiLayerNeuralNet implements Classifier {
 	/** Runs an activation threshold function g on some
 	 * input value d.
 	 */
-	private double g(double d) {
+	private double sigmoid(double d) {
 		return 1.0/(1.0 + Math.exp(-d));
 	}
 	
 	/** Runs an activation threshold function g's derivative 
 	 * on some input value d.
 	 */
-	private double gPrime(double d) {
-		double g = g(d);
+	private double sigmoidPrime(double d) {
+		double g = sigmoid(d);
 		return g * (1.0 - g);
 	}
 	
@@ -112,7 +112,7 @@ public class MultiLayerNeuralNet implements Classifier {
 	 */
 	private void backwardPass(int label, double[] prevDelta, double[] output, double[] delta) {
 		delta[this.numNodes - 1] = 
-				gPrime(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
+				sigmoidPrime(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
 		for (int l = this.layer.length - 2; l >= 0; l--) {
 			for (int src : this.layer[l]) {
 				double sum = 0;
@@ -120,7 +120,7 @@ public class MultiLayerNeuralNet implements Classifier {
 					sum += this.weights[src][dest]*delta[dest];
 				}
 				// compute delta and add momentum factor
-				delta[src] = gPrime(output[src])*sum;
+				delta[src] = sigmoidPrime(output[src])*sum;
 				delta[src] += this.momentumFactor*prevDelta[src];
 				// store momentum for future use
 				prevDelta[src] = delta[src];
@@ -138,7 +138,7 @@ public class MultiLayerNeuralNet implements Classifier {
 				}
 				// subtract threshold value
 				input[dest] -= this.weights[dest][dest];
-				output[dest] = g(input[dest]);
+				output[dest] = sigmoid(input[dest]);
 			}
 		}
 	}
@@ -291,7 +291,7 @@ public class MultiLayerNeuralNet implements Classifier {
     			for (int src : this.incomingEdges[dest]) {
     				in[dest] += this.weights[src][dest]*a[src];
     			}
-    			a[dest] = g(in[dest]);
+    			a[dest] = sigmoid(in[dest]);
    			}
     	}
     	    	
