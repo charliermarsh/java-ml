@@ -71,17 +71,22 @@ public class DataSet {
 	 * required format of these files.
 	 **/
 	public DataSet(String filestem) throws FileNotFoundException, IOException {
-		String[] words = null;
 
-		// read .names file
+		readAttributeInformation(filestem);
+		readExamples(filestem);
+		
+		in = null;
+		filename = null;
+	}
 
+	private void readAttributeInformation(String filestem) throws FileNotFoundException, IOException {
 		open_file(filestem + ".names");
 		ArrayList<String[]> attr_list = new ArrayList<String[]>();
 
 		String line;
 		while ((line = read_line()) != null) {
 			line = line.trim();
-			words = line.split("\\s+");
+			String[] words = line.split("\\s+");
 			if (line.equals(""))
 				continue;
 
@@ -109,7 +114,7 @@ public class DataSet {
 		attrVals = new String[numAttrs][];
 
 		for (int i = 0; i < numAttrs; i++) {
-			words = attr_list.get(i);
+			String[] words = attr_list.get(i);
 			attrName[i] = words[0];
 			if (words[1].equals("numeric")) {
 				attrVals[i] = null;
@@ -120,9 +125,10 @@ public class DataSet {
 				}
 			}
 		}
+	}
 
-		// read data files
-
+	private void readExamples(String filestem) throws FileNotFoundException, IOException {
+		String line;
 		for (int traintest = 0; traintest < 2; traintest++) {
 			ArrayList<int[]> ex_list = new ArrayList<int[]>();
 			ArrayList<Integer> lab_list = new ArrayList<Integer>();
@@ -144,7 +150,7 @@ public class DataSet {
 				if (line.equals(""))
 					continue;
 
-				words = line.split("\\s+");
+				String[] words = line.split("\\s+");
 				if (words.length != numAttrs + traintest) {
 					String err = "wrong number of tokens at line " + line_count + " in file " + filename;
 					System.err.println(err);
@@ -205,8 +211,6 @@ public class DataSet {
 			}
 			in.close();
 		}
-		in = null;
-		filename = null;
 	}
 
 	/**
