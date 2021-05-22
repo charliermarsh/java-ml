@@ -1,3 +1,6 @@
 *.class
 bin/*
 data/*.testout
+/bin/
+.classpath
+.project
