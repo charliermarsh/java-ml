@@ -21,41 +21,39 @@ public class DecisionTree implements Classifier{
 
 
 
-    private void randomizedTree(boolean rand) {
+    public void randomizedTree(boolean rand) {
     	random = new Random();
     	this.randomize = rand;
     }
     
+    public HashSet<Integer> initializeAttributes(DataSet data) {
+    	HashSet<Integer> attributes = new HashSet<Integer>(data.numAttrs);
+    	for (int i = 0; i < data.numAttrs; i++) { attributes.add(i); }
+		return attributes;
+    }
  
+    public ArrayList<Integer> initializeExamples(DataSet data) {
+        ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
+        for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
+		return examples;
+    }
+    
     /*Just takes dataset - uses all attributes in training*/
     public DecisionTree(DataSet data, boolean rand) {
-    	randomizedTree(rand);
-        HashSet<Integer> attributes = new HashSet<Integer>(data.numAttrs);
-        ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
-
-        /*Initialize example and attribute lists*/
-        for (int i = 0; i < data.numAttrs; i++) { attributes.add(i); }
-        for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
-
-        treeRoot = new Node(data, attributes, examples, randomize, random);
+    	randomizedTree(rand); 
+    	treeRoot = new Node(data, initializeAttributes(data), initializeExamples(data), randomize, random);
     }
 
     /*Takes the dataset and attributes to use in training*/
     public DecisionTree(DataSet data, HashSet<Integer> attributes, boolean rand) {
     	randomizedTree(rand);
-
-        /*Initialize example lists to include all examples*/
-        ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
-        for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
-
-        treeRoot = new Node(data, attributes, examples, randomize, random);
+        treeRoot = new Node(data, attributes, initializeExamples(data), randomize, random);
     }
 
     /*Take both attributes and examples to use for training*/
     public DecisionTree(DataSet data, HashSet<Integer> attributes,
             ArrayList<Integer> examples, boolean rand) {
     	randomizedTree(rand);
-
         treeRoot = new Node(data, attributes, examples, randomize, random);
     }
 
