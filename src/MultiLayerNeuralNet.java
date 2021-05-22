@@ -54,9 +54,9 @@ public class MultiLayerNeuralNet implements Classifier {
 	 * Trains the neural network on every example in data set d
 	 * using previous deltas prevDelta.
 	 */
-	private void backProp(DataSet d, double[] prevDelta) {
+	private void backPropagation(DataSet d, double[] prevDelta) {
 		for (int i = 0; i < d.numTrainExs; i++)
-			backProp(d.trainEx[i], d.trainLabel[i], prevDelta);
+			backPropagation(d.trainEx[i], d.trainLabel[i], prevDelta);
 	}
 	
 	/** Trains the neural network on an example ex by using
@@ -64,8 +64,8 @@ public class MultiLayerNeuralNet implements Classifier {
 	 * Example ex is known to be of classification label. Uses
 	 * 0 for all previous deltas.
 	 */
-	private void backProp(int[] ex, int label) {
-		backProp(ex, label, new double[this.numNodes]);
+	private void backPropagation(int[] ex, int label) {
+		backPropagation(ex, label, new double[this.numNodes]);
 	}
 	
 	/** Trains the neural network on an example ex by using
@@ -75,7 +75,7 @@ public class MultiLayerNeuralNet implements Classifier {
 	 * to add momentum to the gradient descent calculation. Stores
 	 * the calculated deltas in prevDelta for future use.
 	 */
-	private void backProp(int[] ex, int label, double[] prevDelta) {
+	private void backPropagation(int[] ex, int label, double[] prevDelta) {
 		// output of each node
 		double[] a = new double[this.numNodes];
 		// input to each node
@@ -185,7 +185,7 @@ public class MultiLayerNeuralNet implements Classifier {
 		int maxRuns = 100;
 		for (int runs = 0; runs < maxRuns; runs++) {
 			// run back prop
-			backProp(this.d, prevDelta);
+			backPropagation(this.d, prevDelta);
 			double error = error(this.d);
 			// if error is sufficiently low, cut-off
 			if (error < epsilon) {
