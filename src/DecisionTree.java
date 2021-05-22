@@ -9,24 +9,27 @@ import java.util.ArrayList;
 import java.util.HashSet;
 public class DecisionTree implements Classifier{
 
-    Node treeRoot;
+    private Node treeRoot;
 
-    Random random;
+    private Random random;
 
     /*
      * Randomize tree (for random forest)?  If true, chooses some subset of
      * attributes to choose best from at each node
      */
-    boolean randomize;
+    private boolean randomize;
 
 
 
-
+    private void randomizedTree(boolean rand) {
+    	random = new Random();
+    	this.randomize = rand;
+    }
+    
+ 
     /*Just takes dataset - uses all attributes in training*/
     public DecisionTree(DataSet data, boolean rand) {
-        random = new Random();
-
-        this.randomize = rand;
+    	randomizedTree(rand);
         HashSet<Integer> attributes = new HashSet<Integer>(data.numAttrs);
         ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
 
@@ -39,9 +42,7 @@ public class DecisionTree implements Classifier{
 
     /*Takes the dataset and attributes to use in training*/
     public DecisionTree(DataSet data, HashSet<Integer> attributes, boolean rand) {
-        random = new Random();
-
-        this.randomize = rand; //Randomized tree?
+    	randomizedTree(rand);
 
         /*Initialize example lists to include all examples*/
         ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
@@ -53,8 +54,8 @@ public class DecisionTree implements Classifier{
     /*Take both attributes and examples to use for training*/
     public DecisionTree(DataSet data, HashSet<Integer> attributes,
             ArrayList<Integer> examples, boolean rand) {
-        random = new Random();
-        this.randomize = rand;
+    	randomizedTree(rand);
+
         treeRoot = new Node(data, attributes, examples, randomize, random);
     }
 
