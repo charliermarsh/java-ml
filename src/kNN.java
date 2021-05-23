@@ -293,7 +293,6 @@ public class kNN implements Classifier {
 	 * greedily adding the attribute that minimizes error.
 	 */
 	private void forwardsSelection() {
-		
 		removeAllAttributes();
 		
 		int numSets=8;
