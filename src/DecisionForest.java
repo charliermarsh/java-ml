@@ -34,6 +34,16 @@ public class DecisionForest implements Classifier{
             } 
         return treeAttributes;
         }
+        
+        private ArrayList<Integer> randomizeTreeExamples(int number, ArrayList<Integer> examples){
+    	    ArrayList<Integer> treeExamples = new ArrayList<Integer>(number);
+            Collections.shuffle(examples);
+            for (int i = 0; i < number; i++) {
+        	    treeExamples.add(examples.get(i));
+            } 
+        return treeExamples;
+        }
+        
         /*
          * This is basically a nonsensical way of choosing attributes/examples
          * to train each tree on.  Can't really find much on optimal values.
@@ -57,17 +67,10 @@ public class DecisionForest implements Classifier{
             /* Need to decide how to select number of features*/
             //int numFeatures = random.nextInt(data.numAttrs - 1) + 1;
             //int numTrain = random.nextInt(data.numTrainExs);
-            HashSet<Integer> treeAttributes = randomizeTreeAttributes(numFeatures, attributes);
-
-            ArrayList<Integer> treeExamples = new ArrayList<Integer>(numTrain);
-
             //Randomize the list
 
-
-            Collections.shuffle(examples);
-            for (int i = 0; i < numTrain; i++) {
-                treeExamples.add(examples.get(i));
-            }
+            HashSet<Integer> treeAttributes = randomizeTreeAttributes(numFeatures, attributes);
+            ArrayList<Integer> treeExamples = randomizeTreeExamples(numTrain, examples);
 
             //System.out.println(numFeatures + ":" + numTrain);
             forest[cTree] = new DecisionTree(data, treeAttributes,
