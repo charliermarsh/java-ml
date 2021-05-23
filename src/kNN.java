@@ -18,7 +18,7 @@ public class kNN implements Classifier {
 	// elimAttr[i] is true if attribute i has been eliminated
 	private boolean[] isEliminatedAttr;
 	// learning rate for weight training
-	private double learningRate = 0.05;
+	private static final double learningRate = 0.05;
 	// instanceWeights for training examples
 	private double[] instanceWeights;
 
