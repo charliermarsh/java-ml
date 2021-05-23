@@ -41,7 +41,7 @@ public class DiscreteDataSet extends DataSet {
 
     /** This constructor creates an empty discrete dataset. */
     public DiscreteDataSet() {
-	super();
-    }
+		super();
+	}
 
 }
