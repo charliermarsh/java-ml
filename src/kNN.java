@@ -40,7 +40,7 @@ public class kNN implements Classifier {
 		
 		this.kOpt = optimizeK(this.kMin, this.kMax);
 		backwardsElimination();
-		traininstanceWeights(100000);		
+		traininstanceWeights(100);		
 	}
 	
 	/** Constructor for the kNN machine learning algorithm.
