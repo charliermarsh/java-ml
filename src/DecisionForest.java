@@ -20,6 +20,11 @@ public class DecisionForest implements Classifier{
 
         forest = new DecisionTree[forestSize];
 
+        private ArrayList<Integer> pickRandomNumber(int number) {
+    	    ArrayList<Integer> result = new ArrayList<Integer>(number);
+    	    for (int i = 0; i < number; i++) { result.add(i); }
+    	    return result;
+        }
         /*
          * This is basically a nonsensical way of choosing attributes/examples
          * to train each tree on.  Can't really find much on optimal values.
@@ -27,10 +32,9 @@ public class DecisionForest implements Classifier{
          *
          * Picks a random number of attributes/examples to train each tree.
          */
-        ArrayList<Integer> attributes = new ArrayList<Integer>(data.numAttrs);
-        ArrayList<Integer> examples = new ArrayList<Integer>(data.numTrainExs);
-        for (int i = 0; i < data.numAttrs; i++) { attributes.add(i); }
-        for (int i = 0; i < data.numTrainExs; i++) { examples.add(i); }
+        ArrayList<Integer> attributes = pickRandomNumber(data.numAttrs);
+        ArrayList<Integer> examples = pickRandomNumber(data.numTrainExs);
+
 
         //Train each tree by choosing a subset of features. Actually just using
         //every feature in this case.
