@@ -10,15 +10,15 @@ public class kNN implements Classifier {
 	// data set of training examples
 	private DataSet dataSet;
 	// minimum possible value of k
-	private static final int kMin = 1;
+	private final int kMin = 1;
 	// maximum possible value of k
-	private static final int kMax = 15;
+	private final int kMax = 15;
 	// cross-validated, optimized value of k
 	private int kOpt = 7;
 	// elimAttr[i] is true if attribute i has been eliminated
 	private boolean[] isEliminatedAttr;
 	// learning rate for weight training
-	private static final double learningRate = 0.05;
+	private final double learningRate = 0.05;
 	// instanceWeights for training examples
 	private double[] instanceWeights;
 
@@ -176,8 +176,7 @@ public class kNN implements Classifier {
 			for (int i = 0; i < this.dataSet.numTrainExs; i++) {
 				
 				// modify instanceWeights to satisfy example
-				boolean isWrongPredict = this.dataSet.trainLabel[i] != voteCount(kNNIndicesSet[i]);
-				while (isWrongPredict) {
+				while (this.dataSet.trainLabel[i] != voteCount(kNNIndicesSet[i])) {
 					for (int k = 0; k < this.kOpt; k++) {
 						int neighborIndex = kNNIndicesSet[i][k];
 						if (this.dataSet.trainLabel[neighborIndex] != this.dataSet.trainLabel[i])
