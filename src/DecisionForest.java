@@ -15,34 +15,35 @@ public class DecisionForest implements Classifier{
     Random random;
     DecisionTree[] forest;
 
+    private ArrayList<Integer> pickRandomNumber(int number) {
+        ArrayList<Integer> result = new ArrayList<Integer>(number);
+        for (int i = 0; i < number; i++) { result.add(i); }
+        return result;
+    }
+
+    private HashSet<Integer> randomizeTreeAttributes(int number, ArrayList<Integer> attributes){
+        HashSet<Integer> treeAttributes = new HashSet<Integer>(number);
+        Collections.shuffle(attributes);
+        for (int i = 0; i < number; i++) {
+            treeAttributes.add(attributes.get(i));
+        } 
+    return treeAttributes;
+    }
+
+    private ArrayList<Integer> randomizeTreeExamples(int number, ArrayList<Integer> examples){
+        ArrayList<Integer> treeExamples = new ArrayList<Integer>(number);
+        Collections.shuffle(examples);
+        for (int i = 0; i < number; i++) {
+            treeExamples.add(examples.get(i));
+        } 
+    return treeExamples;
+    }
     public DecisionForest(DataSet data, int forestSize) {
         random = new Random();
 
         forest = new DecisionTree[forestSize];
 
-        private ArrayList<Integer> pickRandomNumber(int number) {
-    	    ArrayList<Integer> result = new ArrayList<Integer>(number);
-    	    for (int i = 0; i < number; i++) { result.add(i); }
-    	    return result;
-        }
-        
-        private HashSet<Integer> randomizeTreeAttributes(int number, ArrayList<Integer> attributes){
-    	    HashSet<Integer> treeAttributes = new HashSet<Integer>(number);
-            Collections.shuffle(attributes);
-            for (int i = 0; i < number; i++) {
-                treeAttributes.add(attributes.get(i));
-            } 
-        return treeAttributes;
-        }
-        
-        private ArrayList<Integer> randomizeTreeExamples(int number, ArrayList<Integer> examples){
-    	    ArrayList<Integer> treeExamples = new ArrayList<Integer>(number);
-            Collections.shuffle(examples);
-            for (int i = 0; i < number; i++) {
-        	    treeExamples.add(examples.get(i));
-            } 
-        return treeExamples;
-        }
+
         
         /*
          * This is basically a nonsensical way of choosing attributes/examples
