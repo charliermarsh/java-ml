@@ -21,6 +21,15 @@ public class Adaboost implements Classifier{
         return result;
     }
     
+    private HashSet<Integer> randomizeTreeAttributes(int number, ArrayList<Integer> attributes){
+        HashSet<Integer> treeAttributes = new HashSet<Integer>(number);
+        Collections.shuffle(attributes);
+        for (int i = 0; i < number; i++) {
+            treeAttributes.add(attributes.get(i));
+        } 
+    return treeAttributes;
+    }
+    
     public Adaboost(DataSet data, int forestSize) {
         random = new Random();
 
@@ -48,15 +57,10 @@ public class Adaboost implements Classifier{
             /* Need to decide how to select number of features*/
             //int numFeatures = random.nextInt(data.numAttrs - 1) + 1;
             //int numTrain = random.nextInt(data.numTrainExs);
-            HashSet<Integer> treeAttributes = new HashSet<Integer>(numFeatures);
+            HashSet<Integer> treeAttributes = randomizeTreeAttributes(numFeatures, attributes);
             ArrayList<Integer> treeExamples = new ArrayList<Integer>(numTrain);
 
             //Randomize the list
-            Collections.shuffle(attributes);
-            for (int i = 0; i < numFeatures; i++) {
-                treeAttributes.add(attributes.get(i));
-            }
-
             Collections.shuffle(examples);
             for (int i = 0; i < numTrain; i++) {
                 treeExamples.add(examples.get(i));
