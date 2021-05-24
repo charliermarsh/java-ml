@@ -20,7 +20,7 @@ public class BinaryDataSet extends NumericDataSet {
 
 		int new_numAttrs = 0;
 
-		int[][] cont_vals = getContVals();
+		int[][] cont_vals = getContinuousValues();
 
 		for (int a = 0; a < numAttrs; a++)
 			new_numAttrs += cont_vals[a].length - 1;

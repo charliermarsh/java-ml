@@ -18,10 +18,10 @@ public class DiscreteDataSet extends DataSet {
 	throws FileNotFoundException, IOException {
 	super(filestem);
 
-	int[][] cont_vals = getContVals();
+	int[][] cont_vals = getContinuousValues();
 
 	for (int j = 0; j < numAttrs; j++) {
-	    if (attrVals[j] != null)
+	    if (!isNumericAttribute(j))
 		continue;
 	    attrVals[j] = new String[cont_vals[j].length];
 	    for (int k = 0; k < cont_vals[j].length; k++) {

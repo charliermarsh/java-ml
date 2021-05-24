@@ -75,7 +75,7 @@ public class DataSet {
 		fileInput.readAttributeInformation(this, filestem);
 		fileInput.readExamples(this, filestem);
 	}
-	
+
 	/**
 	 * This method prints out the predictions of classifier <tt>c</tt> on each of
 	 * the test examples in the format required for submission. The result is sent
@@ -109,31 +109,48 @@ public class DataSet {
 
 		out.close();
 	}
-	
-	protected int[][] getContVals() {
-		int[][] vals = new int[numAttrs][];
-		for (int a = 0; a < numAttrs; a++) {
-			if (attrVals[a] != null)
+
+	/**
+	 * @return values (type: int[][]): For numerical attributes, save all values
+	 *         shown in train and test examples in ascending order. If the a-th
+	 *         attribute is numeric, <tt>values[a][v]</tt> is the v-th value when
+	 *         the values of the a-th attribute in <tt>trainEx</tt> and
+	 *         <tt>testEx</tt> are sorted in ascending order. Otherwise, array
+	 *         corresponding to <tt>values[a]</tt> is not assigned.
+	 **/
+	protected int[][] getContinuousValues() {
+		int[][] values = new int[numAttrs][];
+		for (int attributeNum = 0; attributeNum < numAttrs; attributeNum++) {
+			if (!isNumericAttribute(attributeNum))
 				continue;
 
-			TreeSet<Integer> t = new TreeSet<Integer>();
+			TreeSet<Integer> valueSet = new TreeSet<Integer>();
 
-			for (int traintest = 0; traintest < 2; traintest++) {
-				int[][] exs = (traintest == 1 ? trainEx : testEx);
-				for (int i = 0; i < exs.length; i++) {
-					t.add(new Integer(exs[i][a]));
-				}
-			}
+			addValues(attributeNum, valueSet, trainEx);
+			addValues(attributeNum, valueSet, testEx);
 
-			vals[a] = new int[t.size()];
-
-			Iterator<Integer> it = t.iterator();
-			int i = 0;
-			while (it.hasNext()) {
-				vals[a][i++] = (it.next()).intValue();
-			}
+			addValues(attributeNum, values, valueSet);
 		}
-		return vals;
+		return values;
+	}
+
+	private void addValues(int attributeNum, TreeSet<Integer> destination, int[][] source) {
+		for (int i = 0; i < source.length; i++) {
+			destination.add( (Integer)source[i][attributeNum] );
+		}
+	}
+
+	private void addValues(int attributeNum, int[][] destination, TreeSet<Integer> source) {
+		destination[attributeNum] = new int[source.size()];
+		Iterator<Integer> it = source.iterator();
+		int i = 0;
+		while (it.hasNext()) {
+			destination[attributeNum][i++] = (it.next()).intValue();
+		}
+	}
+
+	protected boolean isNumericAttribute(int attributeNum) {
+		return attrVals[attributeNum] == null;
 	}
 
 }

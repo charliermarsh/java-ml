@@ -19,14 +19,14 @@ public class NumericDataSet extends DataSet {
 		int new_numAttrs = 0;
 
 		for (int a = 0; a < numAttrs; a++)
-			new_numAttrs += (attrVals[a] == null ? 1 : attrVals[a].length);
+			new_numAttrs += (isNumericAttribute(a) ? 1 : attrVals[a].length);
 
 		for (int traintest = 0; traintest < 2; traintest++) {
 			int[][] exs = (traintest == 1 ? trainEx : testEx);
 			for (int i = 0; i < exs.length; i++) {
 				int[] new_ex = new int[new_numAttrs];
 				for (int a = 0, na = 0; a < numAttrs; a++) {
-					if (attrVals[a] == null)
+					if (isNumericAttribute(a))
 						new_ex[na++] = exs[i][a];
 					else
 						for (int j = 0; j < attrVals[a].length; j++)
@@ -38,7 +38,7 @@ public class NumericDataSet extends DataSet {
 
 		String[] new_attrName = new String[new_numAttrs];
 		for (int a = 0, na = 0; a < numAttrs; a++) {
-			if (attrVals[a] == null)
+			if (isNumericAttribute(a))
 				new_attrName[na++] = attrName[a];
 			else
 				for (int j = 0; j < attrVals[a].length; j++)
