@@ -40,7 +40,7 @@ public class kNN implements Classifier {
 		
 		this.kOpt = optimizeK(this.kMin, this.kMax);
 		backwardsElimination();
-		traininstanceWeights(1000);		
+		traininstanceWeights(100);		
 	}
 	
 	/** Constructor for the kNN machine learning algorithm.
@@ -198,16 +198,7 @@ public class kNN implements Classifier {
 	 */
 	private void backwardsElimination() {
 		int numSets=8;
-		double[][] dists = setCrossValidationDistance(numSets);
-
-		for (int i = 0; i < dists.length; i++) {
-			for (int j = i+1; j < dists.length; j++) {
-				if (dists[i][j] == Double.POSITIVE_INFINITY) continue;
-				
-				dists[i][j] = dist(this.d.trainEx[i], this.d.trainEx[j]);
-				dists[j][i] = dists[i][j];
-			}
-		}
+		double[][] distances = distanceSettingForBackward(numSets);
 		
 		// orderedIndices[i][j] is index of jth closest example to i
 		int[][] orderedIndices = new int[this.d.numTrainExs][this.d.numTrainExs];
@@ -217,7 +208,7 @@ public class kNN implements Classifier {
 			for (int j = 0; j < orderedIndices.length; j++) {
 				a[j] = j;
 			}
-			exComparator comp = new exComparator(dists[i], i);
+			exComparator comp = new exComparator(distances[i], i);
 			comp.descending = true;
 			Arrays.sort(a, comp);
 			for (int j = 0; j < orderedIndices.length; j++) {
@@ -234,9 +225,9 @@ public class kNN implements Classifier {
 			double[][] newDists = new double[this.d.numTrainExs][this.d.numTrainExs];
 			
 			// linear-time distance update
-			for (int i = 0; i < dists.length; i++) {
-				for (int j = i+1; j < dists.length; j++) {
-					newDists[i][j] = dists[i][j] - 
+			for (int i = 0; i < distances.length; i++) {
+				for (int j = i+1; j < distances.length; j++) {
+					newDists[i][j] = distances[i][j] - 
 							Math.abs(this.d.trainEx[i][m] - this.d.trainEx[j][m]);
 					newDists[j][i] = newDists[i][j];
 				}
@@ -263,16 +254,29 @@ public class kNN implements Classifier {
 			if (adjustedError < baselineError) {
 				this.elimAttr[m] = true;
 				baselineError = adjustedError;
-				dists = newDists;
+				distances = newDists;
 				sum++;
 			}
 		}
 		//System.out.printf("%d attributes removed.\n", sum);
 	}
 
+	private double[][] distanceSettingForBackward(int numSets) {
+		double[][] distances = setCrossValidationDistance(numSets);
+		for (int i = 0; i < distances.length; i++) {
+			for (int j = i+1; j < distances.length; j++) {
+				if (distances[i][j] == Double.POSITIVE_INFINITY) continue;
+				
+				distances[i][j] = dist(this.d.trainEx[i], this.d.trainEx[j]);
+				distances[j][i] = distances[i][j];
+			}
+		}
+		return distances;
+	}
+
 	private double[][] setCrossValidationDistance(int numSets) {
 		// calculate all distances to avoid recomputation
-		double[][] dists = new double[this.d.numTrainExs][this.d.numTrainExs];
+		double[][] distances = new double[this.d.numTrainExs][this.d.numTrainExs];
 		
 		// use 8 different sets for cross validation (set dist to infinity)
 		for (int setNum = 0; setNum < numSets; setNum++) {
@@ -281,12 +285,12 @@ public class kNN implements Classifier {
 
 			for (int t = from; t < to; t++) {
 				for (int s = t+1; s < to; s++) {
-					dists[t][s] = Double.POSITIVE_INFINITY;
-					dists[s][t] = dists[t][s];
+					distances[t][s] = Double.POSITIVE_INFINITY;
+					distances[s][t] = distances[t][s];
 				}
 			}
 		}
-		return dists;
+		return distances;
 	}
 	
 	/** Uses forward selection to add attributes to a distance function,
