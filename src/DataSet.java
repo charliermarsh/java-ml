@@ -82,13 +82,8 @@ public class DataSet {
 	 * to the given <tt>PrintStream</tt>.
 	 **/
 	public void printTestPredictions(Classifier c, PrintStream out) {
-		out.println(c.author());
-		out.println(".");
-		out.println(c.algorithmDescription());
-		out.println(".");
-		for (int i = 0; i < numTestExs; i++) {
-			out.println(className[c.predict(testEx[i])]);
-		}
+		FileOutput fileOutput = new FileOutput(out);
+		fileOutput.write(this, c);
 	}
 
 	/**
@@ -97,17 +92,8 @@ public class DataSet {
 	 * printed to the file <tt>filestem.testout</tt>.
 	 **/
 	public void printTestPredictions(Classifier c, String filestem) throws FileNotFoundException {
-		PrintStream out;
-
-		try {
-			out = new PrintStream(new BufferedOutputStream(new FileOutputStream(filestem + ".testout")));
-		} catch (FileNotFoundException e) {
-			System.err.println("Cannot open file " + filestem + ".testout");
-			throw e;
-		}
-		printTestPredictions(c, out);
-
-		out.close();
+		FileOutput fileOutput = new FileOutput();
+		fileOutput.write(this, c, filestem);
 	}
 
 	/**
