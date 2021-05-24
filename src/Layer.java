@@ -2,7 +2,6 @@ import java.util.LinkedList;
 import java.util.Arrays;
 
 public class Layer {
-
 	/* weights[i][j] is the weight on edge from node i -> j. 
 	 * as a special case, weights[i][i] is the threshold value
 	 * of the perceptron i. */

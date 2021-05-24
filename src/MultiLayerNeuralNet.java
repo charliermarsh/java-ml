@@ -116,7 +116,6 @@ public class MultiLayerNeuralNet implements Classifier {
 		delta[this.numNodes - 1] = 
 				sigmoidPrime(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
 		for (int l = this.layer.length - 2; l >= 0; l--) {
-//			for (int src : this.layer[l]) {
 			for (int src =0 ; src < this.layer[l].getNumNodes(); src++) {
 				double sum = 0;
 				for (int dest : this.layer[l].getOutgoingEdges(src)) {
@@ -135,7 +134,6 @@ public class MultiLayerNeuralNet implements Classifier {
 	 */
 	private void forwardPass(double[] output, double[] input) {
 		for (int l = 1; l < this.layer.length; l++) {
-//			for (int dest : this.layer[l]) {
 			for (int dest = 0; dest < this.layer[l].getNumNodes(); dest++) {
 				for (int src : this.layer[l].getIncomingEdges(dest)) {
 					input[ getIdx(l,dest) ] += this.layer[l-1].getWeight(src,dest)*output[ getIdx(l-1,src) ];
@@ -180,7 +178,6 @@ public class MultiLayerNeuralNet implements Classifier {
 		double epsilon = 0.05;
 		double minError = Double.MAX_VALUE;
 		double lastError = Double.MAX_VALUE;
-//		double[][] bestWeights = new double[this.weights.length][this.weights.length];
 		double[] prevDelta = new double[this.numNodes];
 		int maxRuns = 1;
 		for (int runs = 0; runs < maxRuns; runs++) {
@@ -195,7 +192,6 @@ public class MultiLayerNeuralNet implements Classifier {
 			}
 			// if error has not improved, reset
 			else if (error >= lastError) {
-//				randomizeWeights();
 				for(int l=0; l<this.layer.length; l++)
 					this.layer[l].randomizeWeights();
 				lastError = Double.MAX_VALUE;
@@ -211,8 +207,6 @@ public class MultiLayerNeuralNet implements Classifier {
 			}
 		}
 		// assign permanent weights to the best weights observed
-//		this.weights = bestWeights;
-
 		for(int l=0; l<this.layer.length; l++)
 			this.layer[l].assignWeights();
 	}
@@ -232,7 +226,6 @@ public class MultiLayerNeuralNet implements Classifier {
 		
     	// Compute outputs by propagating inputs forward
     	for (int l = 1; l < this.layer.length; l++) {
-//    		for (int dest : this.layer[l]) {
     		for (int dest = 0; dest < this.layer[l].getNumNodes(); dest++) {
     			for (int src : this.layer[l].getIncomingEdges(dest)) {
     				in[dest] += this.layer[l-1].getWeight(src,dest)*a[src];
