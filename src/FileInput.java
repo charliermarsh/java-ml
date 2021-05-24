@@ -1,10 +1,242 @@
-import java.io.*;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class FileInput {
+	private static final int NOT_FOUND = -1;
+	private static final String ATTRIBUTE_INFO_FILE_EXTENSION = ".names";
+	private static final String TRAIN_EXAMPLE_FILE_EXTENSION = ".train";
+	private static final String TEST_EXAMPLE_FILE_EXTENSION = ".test";
 	private String filename;
 	private int line_count;
 	private BufferedReader in;
+	
+	public void read(DataSet dataSet, String filestem) throws FileNotFoundException, IOException {
+		open_file(filestem + ATTRIBUTE_INFO_FILE_EXTENSION);
+		readClassInfomation(dataSet);
+		readAttributeInformation(dataSet);
+		in.close();
+		
+		open_file(filestem + TRAIN_EXAMPLE_FILE_EXTENSION);
+		readTrainExamples(dataSet);
+		in.close();
+		
+		try {
+			open_file(filestem + TEST_EXAMPLE_FILE_EXTENSION);
+		} catch (FileNotFoundException e) {
+			System.err.print("Continuing without test file...\n");
+			dataSet.numTestExs = 0;
+			dataSet.testEx = new int[0][];
+			return;
+		}
+		readTestExamples(dataSet);
+		in.close();
+	}
+
+	private void readClassInfomation(DataSet dataSet) throws IOException {
+		while (true) {
+			String[] words = getWordsForALine();
+			
+			if ( dataSet.className != null || isEndOfFile(words) )
+				break;
+			
+			if ( isEmptyLine(words) )
+				continue;
+			
+			if (words.length != 2) {
+				String err = "expected two class names at " + location();
+				System.err.println(err);
+				throw new RuntimeException(err);
+			}
+			
+			dataSet.className = words;
+		}
+	}
+
+	private void readAttributeInformation(DataSet dataSet) throws IOException {
+		ArrayList<String[]> attributes = new ArrayList<String[]>();
+		while (true) {
+			String[] words = getWordsForALine();
+			
+			if ( isEndOfFile(words) )
+				break;
+			
+			if ( isEmptyLine(words) )
+				continue;
+			
+			if (words.length <= 1) {
+				String err = "expected attribute description at " + location();
+				System.err.println(err);
+				throw new RuntimeException(err);
+			}
+			
+			attributes.add(words);
+		}
+
+		dataSet.numAttrs = attributes.size();
+		dataSet.attrName = new String[dataSet.numAttrs];
+		dataSet.attrVals = new String[dataSet.numAttrs][];
+
+		for (int i = 0; i < dataSet.numAttrs; i++) {
+			String[] words = attributes.get(i);
+			
+			dataSet.attrName[i] = words[0];
+			
+			if ( isNumericAttribute(words[1]) ) 
+				dataSet.attrVals[i] = null;
+			else 
+				dataSet.attrVals[i] = Arrays.copyOfRange(words, 1, words.length);
+		}
+	}
+
+	private void readTrainExamples(DataSet dataSet) throws IOException {
+		ArrayList<int[]> examples = new ArrayList<int[]>();
+		ArrayList<Integer> labels = new ArrayList<Integer>();
+		
+		while (true) {
+			String[] words = getWordsForALine();
+			
+			if ( isEndOfFile(words) )
+				break;
+			
+			if ( isEmptyLine(words) )
+				continue;
+			
+			if (words.length != dataSet.numAttrs + 1) {
+				String err = "wrong number of tokens at " + location();
+				System.err.println(err);
+				throw new RuntimeException(err);
+			}
+
+			int[] aExample = convertToAExample(dataSet, words);
+			examples.add(aExample);
+			
+			int aLabel = convertToALabel(dataSet, words);
+			labels.add( (Integer)aLabel );
+		}
+		
+		dataSet.numTrainExs = examples.size();
+		dataSet.trainEx = new int[0][];
+		dataSet.trainEx = (int[][]) examples.toArray(dataSet.trainEx);
+		dataSet.trainLabel = toArray(labels);
+	}
+
+	private void readTestExamples(DataSet dataSet) throws IOException {
+		ArrayList<int[]> examples = new ArrayList<int[]>();
+
+		while (true) {
+			String[] words = getWordsForALine();
+			
+			if ( isEndOfFile(words) )
+				break;
+			
+			if ( isEmptyLine(words) )
+				continue;
+			
+			if (words.length != dataSet.numAttrs) {
+				String err = "wrong number of tokens at " + location();
+				System.err.println(err);
+				throw new RuntimeException(err);
+			}
+
+			int[] aExample = convertToAExample(dataSet, words);
+			examples.add(aExample);
+		}
+
+		dataSet.numTestExs = examples.size();
+		dataSet.testEx = new int[0][];
+		dataSet.testEx = (int[][]) examples.toArray(dataSet.testEx);
+	}
+	
+	private int[] toArray(ArrayList<Integer> arrayList) {
+		int[] array = new int[arrayList.size()];
+		for (int i = 0; i < arrayList.size(); i++) {
+			array[i] = arrayList.get(i).intValue();
+		}
+		return array;
+	}
+
+	private int convertToALabel(DataSet dataSet, String[] words) {
+		int aLabel;
+		String className = words[dataSet.numAttrs];
+		if (className.equals(dataSet.className[0])) {
+			aLabel = 0;
+		} else if (className.equals(dataSet.className[1])) {
+			aLabel = 1;
+		} else {
+			String err = "unrecognized label at " + location();
+			System.err.println(err);
+			throw new RuntimeException(err);
+		}
+		return aLabel;
+	}
+
+	private int[] convertToAExample(DataSet dataSet, String[] words) {
+		int aExample[] = new int[dataSet.numAttrs];
+		for (int attrNum = 0; attrNum < dataSet.numAttrs; attrNum++) {
+			if (isNumericAttribute(dataSet, attrNum)) {
+				try {
+					aExample[attrNum] = Integer.parseInt(words[attrNum]);
+				} catch (NumberFormatException e) {
+					String err = "Expected integer in field " + (attrNum + 1) + " at " + location();
+					System.err.println(err);
+					throw e;
+				}
+			} else {
+				int valueNum = findAttributeValueNumber(dataSet.attrVals[attrNum], words[attrNum]);
+				if( valueNum == NOT_FOUND ) {
+					String err = "bad attribute value in field " + (attrNum + 1) + " at " + location();
+					System.err.println(err);
+					throw new RuntimeException(err);
+				}
+				aExample[attrNum] = valueNum;
+			}
+		}
+		return aExample;
+	}
+	
+	private int findAttributeValueNumber(String[] values, String value) {
+		int valueNum;
+		for (valueNum = 0; valueNum < values.length; valueNum++) {
+			if( values[valueNum].equals(value) )
+				break;
+		}
+		boolean isFound = (valueNum < values.length);
+		if ( !isFound ) {
+			return NOT_FOUND;
+		}
+		return valueNum;
+	}
+
+	public static boolean isNumericAttribute(DataSet dataSet, int attribute) {
+		return dataSet.attrVals[attribute] == null;
+	}
+	
+	private boolean isNumericAttribute(String attributeValue) {
+		return attributeValue.equals("numeric");
+	}
+
+	private boolean isEmptyLine(String[] words) {
+		return words.length == 1 && words[0].equals("");
+	}
+
+	private boolean isEndOfFile(String[] words) {
+		return words == null;
+	}
+
+	private String[] getWordsForALine() throws IOException {
+		String line;
+		line = read_line();
+		if (line == null)
+			return null;
+		line = line.trim();
+		String[] words = line.split("\\s+");
+		return words;
+	}
 
 	private void open_file(String filename) throws FileNotFoundException {
 		BufferedReader in;
@@ -29,146 +261,13 @@ public class FileInput {
 		try {
 			line = in.readLine();
 		} catch (IOException e) {
-			System.err.println("Error reading line " + line_count + " in file " + filename);
+			System.err.println("Error reading " + location());
 			throw e;
 		}
 		return line;
 	}
 
-
-	public void readAttributeInformation(DataSet dataSet, String filestem) throws FileNotFoundException, IOException {
-		open_file(filestem + ".names");
-		ArrayList<String[]> attr_list = new ArrayList<String[]>();
-
-		String line;
-		while ((line = read_line()) != null) {
-			line = line.trim();
-			String[] words = line.split("\\s+");
-			if (line.equals(""))
-				continue;
-
-			if (dataSet.className == null) {
-				if (words.length != 2) {
-					String err = "expected two class names at line " + line_count + " in file " + filename;
-					System.err.println(err);
-					throw new RuntimeException(err);
-				}
-				dataSet.className = words;
-			} else {
-				if (words.length <= 1) {
-					String err = "expected attribute description at line " + line_count + " in file " + filename;
-					System.err.println(err);
-					throw new RuntimeException(err);
-				}
-				attr_list.add(words);
-				dataSet.numAttrs++;
-			}
-		}
-
-		in.close();
-
-		dataSet.attrName = new String[dataSet.numAttrs];
-		dataSet.attrVals = new String[dataSet.numAttrs][];
-
-		for (int i = 0; i < dataSet.numAttrs; i++) {
-			String[] words = attr_list.get(i);
-			dataSet.attrName[i] = words[0];
-			if (words[1].equals("numeric")) {
-				dataSet.attrVals[i] = null;
-			} else {
-				dataSet.attrVals[i] = new String[words.length - 1];
-				for (int j = 1; j < words.length; j++) {
-					dataSet.attrVals[i][j - 1] = words[j];
-				}
-			}
-		}
+	private String location() {
+		return "line " + line_count + " in file " + filename;
 	}
-
-	public void readExamples(DataSet dataSet, String filestem) throws FileNotFoundException, IOException {
-		String line;
-		for (int traintest = 0; traintest < 2; traintest++) {
-			ArrayList<int[]> ex_list = new ArrayList<int[]>();
-			ArrayList<Integer> lab_list = new ArrayList<Integer>();
-
-			if (traintest == 1)
-				open_file(filestem + ".train");
-			else
-				try {
-					open_file(filestem + ".test");
-				} catch (FileNotFoundException e) {
-					System.err.print("Continuing without test file...\n");
-					dataSet.numTestExs = 0;
-					dataSet.testEx = new int[0][];
-					continue;
-				}
-
-			while ((line = read_line()) != null) {
-				line = line.trim();
-				if (line.equals(""))
-					continue;
-
-				String[] words = line.split("\\s+");
-				if (words.length != dataSet.numAttrs + traintest) {
-					String err = "wrong number of tokens at line " + line_count + " in file " + filename;
-					System.err.println(err);
-					throw new RuntimeException(err);
-				}
-
-				int ex[] = new int[dataSet.numAttrs];
-				for (int i = 0; i < dataSet.numAttrs; i++) {
-					if (dataSet.attrVals[i] == null) {
-						try {
-							ex[i] = Integer.parseInt(words[i]);
-						} catch (NumberFormatException e) {
-							System.err.println("Expected integer in field " + (i + 1) + " at line " + line_count
-									+ " in file " + filename);
-							throw e;
-						}
-					} else {
-						int j;
-						for (j = 0; j < dataSet.attrVals[i].length && !dataSet.attrVals[i][j].equals(words[i]); j++)
-							;
-						if (j >= dataSet.attrVals[i].length) {
-							String err = "bad attribute value in field " + (i + 1) + " at line " + line_count
-									+ " in file " + filename;
-							System.err.println(err);
-							throw new RuntimeException(err);
-						}
-						ex[i] = j;
-					}
-				}
-				ex_list.add(ex);
-				if (traintest == 1) {
-					int lab;
-					if (words[dataSet.numAttrs].equals(dataSet.className[0])) {
-						lab = 0;
-					} else if (words[dataSet.numAttrs].equals(dataSet.className[1])) {
-						lab = 1;
-					} else {
-						String err = "unrecognized label at line " + line_count + " in file " + filename;
-						System.err.println(err);
-						throw new RuntimeException(err);
-					}
-					lab_list.add(new Integer(lab));
-				}
-			}
-
-			if (traintest == 0) {
-				dataSet.numTestExs = ex_list.size();
-				dataSet.testEx = new int[0][];
-				dataSet.testEx = (int[][]) ex_list.toArray(dataSet.testEx);
-			} else {
-				dataSet.numTrainExs = ex_list.size();
-				dataSet.trainEx = new int[0][];
-				dataSet.trainEx = (int[][]) ex_list.toArray(dataSet.trainEx);
-				dataSet.trainLabel = new int[dataSet.numTrainExs];
-				for (int i = 0; i < dataSet.numTrainExs; i++) {
-					dataSet.trainLabel[i] = (lab_list.get(i)).intValue();
-				}
-			}
-			in.close();
-		}
-	}
-
-
 }

@@ -72,8 +72,7 @@ public class DataSet {
 	 **/
 	public DataSet(String filestem) throws FileNotFoundException, IOException {
 		FileInput fileInput = new FileInput();
-		fileInput.readAttributeInformation(this, filestem);
-		fileInput.readExamples(this, filestem);
+		fileInput.read(this, filestem);
 	}
 
 	/**
@@ -136,7 +135,7 @@ public class DataSet {
 	}
 
 	protected boolean isNumericAttribute(int attributeNum) {
-		return attrVals[attributeNum] == null;
+		return FileInput.isNumericAttribute(this, attributeNum);
 	}
 
 }
