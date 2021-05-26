@@ -5,10 +5,12 @@ import java.util.Comparator;
 import java.util.PriorityQueue;
 import java.util.Random;
 
-public class kNN implements Classifier {
+public class kNN implements Classifier{
 	
 	// data set of training examples
 	private DataSet dataSet;
+	// distance strategy
+	private DistanceStrategy strategy;
 	// minimum possible value of k
 	private final int kMin = 1;
 	// maximum possible value of k
@@ -21,24 +23,40 @@ public class kNN implements Classifier {
 	private final double learningRate = 0.05;
 	// instanceWeights for training examples
 	private double[] instanceWeights;
-
+	
+	
+//	public void setDistanceStrategy(DistanceStrategy strategy) {
+//        this.strategy = strategy;
+//    }
+    
+    public double getDistance(int[] vector1, int[] vector2) {
+		int len = Math.min(vector1.length, vector2.length);
+		int distance = 0;
+		for (int i = 0; i < len; i++) {
+			// skip if attribute is eliminated
+			if (this.isEliminatedAttr[i] == true) continue;
+			distance += strategy.calcDistance(vector1[i], vector2[i]);
+		}
+        return distance;
+    }
 	
 	/** Constructor for the kNN machine learning algorithm.
 	 *  Takes as argument a data set. From then on, examples
 	 *  in the data set can be fed to predict() in return for
 	 *  classifications.
 	 */
-	public kNN(DataSet dataSet) {
+	public kNN(DataSet dataSet, DistanceStrategy strategy) {
 		/* Setup array labelledData so that it contains all the training
 		   data attributes along with that example's label. */
 		this.dataSet = dataSet;
+		this.strategy=strategy;
 		this.isEliminatedAttr = new boolean[this.dataSet.numAttrs];
 		this.instanceWeights = new double[this.dataSet.numTrainExs];
 		this.kOpt = findOptimalK(this.kMin, this.kMax);
 		
 		initInstanceWeights();
 		backwardsElimination();
-		traininstanceWeights(100000);		
+		traininstanceWeights(1);		
 	}
 
 	private void initInstanceWeights() {
@@ -49,10 +67,11 @@ public class kNN implements Classifier {
 	/** Constructor for the kNN machine learning algorithm.
 	 *  Mainly used for testing the weight training heuristic.
 	 */
-	public kNN(DataSet dataSet, int kOpt, int numIteration) {
+	public kNN(DataSet dataSet, int kOpt, int numIteration, DistanceStrategy strategy) {
 		/* Setup array labelledData so that it contains all the training
 		   data attributes along with that example's label. */
 		this.dataSet = dataSet;
+		this.strategy=strategy;
 		this.isEliminatedAttr = new boolean[this.dataSet.numAttrs];
 		this.instanceWeights = new double[this.dataSet.numTrainExs];
 		this.kOpt = kOpt;
@@ -73,13 +92,14 @@ public class kNN implements Classifier {
 	 *  be performed.
 	 */
 	public kNN(DataSet dataSet, int from, int to, int kOpt, 
-			boolean[] isEliminatedAttr, double[] instanceWeights) {
+			boolean[] isEliminatedAttr, double[] instanceWeights, DistanceStrategy strategy) {
 		/* Setup array labelledData so that it contains all the training
 		   data attributes along with that example's label. */
 		// create data set, excluding firstEx to lastEx examples
 		DataSet subset = initSubset(dataSet, from, to);
 		
 		this.dataSet = subset;
+		this.strategy = strategy;
 		this.kOpt = kOpt;
 		this.isEliminatedAttr = isEliminatedAttr;
 		this.instanceWeights = instanceWeights;	
@@ -110,16 +130,16 @@ public class kNN implements Classifier {
 	/** Computes the squared distance between two integer
 	 * vectors a and b.
 	 */
-	private double calcDistance(int[] vector1, int[] vector2) {
-		int len = Math.min(vector1.length, vector2.length);
-		int distance = 0;
-		for (int i = 0; i < len; i++) {
-			// skip if attribute is eliminated
-			if (this.isEliminatedAttr[i] == true) continue;
-			distance += Math.abs(vector1[i] - vector2[i]);
-		}
-		return distance;
-	}
+//	public double calcDistance(int[] vector1, int[] vector2) {
+//		int len = Math.min(vector1.length, vector2.length);
+//		int distance = 0;
+//		for (int i = 0; i < len; i++) {
+//			// skip if attribute is eliminated
+//			if (this.isEliminatedAttr[i] == true) continue;
+//			distance += Math.abs(vector1[i] - vector2[i]);
+//		}
+//		return distance;
+//	}
 	
 	/** Calculates the error over a labeled data set, returning
 	 * a double that represents the percent error.
@@ -135,7 +155,7 @@ public class kNN implements Classifier {
 			
 			// create new kNN using subset of data set
 			kNN knn = new kNN(this.dataSet, from, to, this.kOpt,
-					this.isEliminatedAttr, this.instanceWeights);
+					this.isEliminatedAttr, this.instanceWeights, this.strategy);
 			
 			for (int i = from; i < to; i++) {
 				boolean isWrongPredict = knn.predict(this.dataSet.trainEx[i]) != this.dataSet.trainLabel[i];
@@ -201,7 +221,7 @@ public class kNN implements Classifier {
 			
 			// create new kNN using subset of data set
 			kNN knn = new kNN(this.dataSet, from, to, this.kOpt,
-					this.isEliminatedAttr, this.instanceWeights);
+					this.isEliminatedAttr, this.instanceWeights, this.strategy);
 			
 			for (int i = from; i < to; i++)
 				kNNIndicesSet[i] = 
@@ -237,7 +257,7 @@ public class kNN implements Classifier {
 			for (int j = i+1; j < dists.length; j++) {
 				if (dists[i][j] == Double.POSITIVE_INFINITY) continue;
 				
-				dists[i][j] = calcDistance(this.dataSet.trainEx[i], this.dataSet.trainEx[j]);
+				dists[i][j] = getDistance(this.dataSet.trainEx[i], this.dataSet.trainEx[j]);
 				dists[j][i] = dists[i][j];
 			}
 		}
@@ -435,7 +455,7 @@ public class kNN implements Classifier {
 			
 			// create new kNN using subset of data set
 			kNN knn = new kNN(this.dataSet, from, to, this.kOpt,
-					this.isEliminatedAttr, this.instanceWeights);
+					this.isEliminatedAttr, this.instanceWeights, this.strategy);
 			
 			// test on held-out training examples
 			for (int t = from; t < to; t++) {
@@ -511,8 +531,8 @@ public class kNN implements Classifier {
 	    	double dist1;
 	    	double dist2;
 	    	if (this.dists == null) {
-	    	    dist1 = calcDistance(dataSet.trainEx[trainExIndex1], this.ex);
-	    		dist2 = calcDistance(dataSet.trainEx[trainExIndex2], this.ex);
+	    	    dist1 = getDistance(dataSet.trainEx[trainExIndex1], this.ex);
+	    		dist2 = getDistance(dataSet.trainEx[trainExIndex2], this.ex);
 	    	}
 	    	else {
 	    		dist1 = this.dists[trainExIndex1];
@@ -543,7 +563,7 @@ public class kNN implements Classifier {
     	
     	// search every example
     	for (int i = 0; i < this.dataSet.numTrainExs; i++) {
-    		dists[i] = calcDistance(this.dataSet.trainEx[i], ex);
+    		dists[i] = getDistance(this.dataSet.trainEx[i], ex);
     		if (pq.size() >= k) {
     			if (dists[i] < dists[pq.peek()]) {
     				pq.remove();
@@ -621,7 +641,8 @@ public class kNN implements Classifier {
 
 	DataSet d = new BinaryDataSet(filestem);
 
-	Classifier c = new kNN(d);
+	Classifier c = new kNN(d, new KNNDistanceStrategy());
+	
 
 	d.printTestPredictions(c, filestem);
     }
