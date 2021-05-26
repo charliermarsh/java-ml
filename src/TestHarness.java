@@ -67,7 +67,7 @@ public class TestHarness {
                     c = new DecisionForest(d, numTrees);
                     break;
                 case KNN:
-                    c = new kNN(d, k, numIters, new KNNDistanceStrategy());
+                    c = new kNN(d, k, numIters, new kNNDistanceStrategy());
                     break;
                 case SLNN:
                     c = new SingleLayerNeuralNet(d);
@@ -146,7 +146,7 @@ public class TestHarness {
                     c = new DecisionForest(d, numTrees);
                     break;
                 case KNN:
-                    c = new kNN(d, new KNNDistanceStrategy());
+                    c = new kNN(d, new kNNDistanceStrategy());
                     break;
                 case SLNN:
                     c = new SingleLayerNeuralNet(d);

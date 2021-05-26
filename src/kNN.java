@@ -24,22 +24,7 @@ public class kNN implements Classifier{
 	// instanceWeights for training examples
 	private double[] instanceWeights;
 	
-	
-//	public void setDistanceStrategy(DistanceStrategy strategy) {
-//        this.strategy = strategy;
-//    }
-    
-    public double getDistance(int[] vector1, int[] vector2) {
-		int len = Math.min(vector1.length, vector2.length);
-		int distance = 0;
-		for (int i = 0; i < len; i++) {
-			// skip if attribute is eliminated
-			if (this.isEliminatedAttr[i] == true) continue;
-			distance += strategy.calcDistance(vector1[i], vector2[i]);
-		}
-        return distance;
-    }
-	
+
 	/** Constructor for the kNN machine learning algorithm.
 	 *  Takes as argument a data set. From then on, examples
 	 *  in the data set can be fed to predict() in return for
@@ -59,11 +44,6 @@ public class kNN implements Classifier{
 		traininstanceWeights(1);		
 	}
 
-	private void initInstanceWeights() {
-		for (int i = 0; i < this.instanceWeights.length; i++)
-			this.instanceWeights[i] = 1.0;
-	}
-	
 	/** Constructor for the kNN machine learning algorithm.
 	 *  Mainly used for testing the weight training heuristic.
 	 */
@@ -105,6 +85,11 @@ public class kNN implements Classifier{
 		this.instanceWeights = instanceWeights;	
 	}
 
+	private void initInstanceWeights() {
+		for (int i = 0; i < this.instanceWeights.length; i++)
+			this.instanceWeights[i] = 1.0;
+	}
+	
 	private DataSet initSubset(DataSet dataSet, int from, int to) {
 		DataSet subset = new DataSet();
 		subset.numAttrs = dataSet.numAttrs;
@@ -130,16 +115,16 @@ public class kNN implements Classifier{
 	/** Computes the squared distance between two integer
 	 * vectors a and b.
 	 */
-//	public double calcDistance(int[] vector1, int[] vector2) {
-//		int len = Math.min(vector1.length, vector2.length);
-//		int distance = 0;
-//		for (int i = 0; i < len; i++) {
-//			// skip if attribute is eliminated
-//			if (this.isEliminatedAttr[i] == true) continue;
-//			distance += Math.abs(vector1[i] - vector2[i]);
-//		}
-//		return distance;
-//	}
+    private double getDistance(int[] vector1, int[] vector2) {
+		int len = Math.min(vector1.length, vector2.length);
+		int distance = 0;
+		for (int i = 0; i < len; i++) {
+			// skip if attribute is eliminated
+			if (this.isEliminatedAttr[i] == true) continue;
+			distance += strategy.calcDistance(vector1[i], vector2[i]);
+		}
+        return distance;
+    }
 	
 	/** Calculates the error over a labeled data set, returning
 	 * a double that represents the percent error.
@@ -641,7 +626,7 @@ public class kNN implements Classifier{
 
 	DataSet d = new BinaryDataSet(filestem);
 
-	Classifier c = new kNN(d, new KNNDistanceStrategy());
+	Classifier c = new kNN(d, new kNNDistanceStrategy());
 	
 
 	d.printTestPredictions(c, filestem);

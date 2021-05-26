@@ -1,5 +1,5 @@
 
-public class KNNDistanceStrategy implements DistanceStrategy{
+public class kNNDistanceStrategy implements DistanceStrategy{
 	@Override
 	public double calcDistance(int pos1, int pos2) {
 		double distance = Math.abs(pos1 - pos2);
