@@ -410,7 +410,7 @@ public class kNN implements Classifier {
 	private int findOptimalK(int kMin, int kMax) {
 		assert(kMax >= kMin);
 		
-		int[] kErrors = optimizeK(kMin, kMax);
+		int[] kErrors = calcErrorByK(kMin, kMax);
 		// set k to that of minimized error
 		double minError = Double.MAX_VALUE;
 		int kOpt = 0;
@@ -424,7 +424,7 @@ public class kNN implements Classifier {
 		return kOpt;
 	}
 
-	private int[] optimizeK(int kMin, int kMax) {
+	private int[] calcErrorByK(int kMin, int kMax) {
 		// use 8 different sets for cross validation
 		int numSets = 8;
 		int[] kErrors = new int[kMax - kMin + 1];
