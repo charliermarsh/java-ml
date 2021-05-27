@@ -11,7 +11,7 @@ public class MultiLayerNeuralNet implements Classifier {
 	/* layer[i] is a list of nodes in layer i. */
 	private final Layer[] layer;
 	/* data set on which to make predictions. */
-	private final DataSet d;
+	private final DataSet dataset;
 	/* number of attributes in data set. */
 	private final int N;
 	/* number of nodes in the network. */
@@ -28,21 +28,6 @@ public class MultiLayerNeuralNet implements Classifier {
 			sum += Math.abs(d.trainLabel[i] - predict(d.trainEx[i]));
 		return sum/d.numTrainExs;
 	}
-	
-//	/** Runs an activation threshold function g on some
-//	 * input value d.
-//	 */
-//	private double sigmoid(double d) {
-//		return 1.0/(1.0 + Math.exp(-d));
-//	}
-//	
-//	/** Runs an activation threshold function g's derivative 
-//	 * on some input value d.
-//	 */
-//	private double sigmoidPrime(double d) {
-//		double g = sigmoid(d);
-//		return g * (1.0 - g);
-//	}
 	
 	/**
 	 * Trains the neural network on every example in data set d
@@ -153,25 +138,29 @@ public class MultiLayerNeuralNet implements Classifier {
 	 */
 	@SuppressWarnings("unchecked")
 	public MultiLayerNeuralNet(DataSet d, Activation a) {		
-		this.d = d;
-		this.N = this.d.numAttrs;
+		this.dataset = d;
+		this.N = this.dataset.numAttrs;
 		this.activation = a;
 		// number of nodes in hidden layer
 		int numHidden = this.N;
 		int numInput = this.N;
 		int numOutput = 1;
-		this.numNodes = this.N + numHidden + 1;
+		this.numNodes = numInput + numHidden + numOutput;
 		// number of layers to be included
 		int numLayers = 3;
 		this.layer = new Layer[numLayers];		
+		createLayers(numHidden, numInput, numOutput);
+
+		train();
+	}
+
+	private void createLayers(int numHidden, int numInput, int numOutput) {
 		Layer inputLayer = new Layer(numInput, 0, numHidden);
 		Layer hiddenLayer = new Layer(numHidden, numInput, numOutput);
 		Layer outputLayer = new Layer(numOutput, numHidden, 0);
 		this.layer[0] = inputLayer;
 		this.layer[1] = hiddenLayer;
 		this.layer[2] = outputLayer;
-
-		train();
 	}
 
 	/** train neural net on each training example
@@ -185,8 +174,8 @@ public class MultiLayerNeuralNet implements Classifier {
 		int maxRuns = 10;
 		for (int runs = 0; runs < maxRuns; runs++) {
 			// run back prop
-			backPropagation(this.d, prevDelta);
-			double error = error(this.d);
+			backPropagation(this.dataset, prevDelta);
+			double error = error(this.dataset);
 			// if error is sufficiently low, cut-off
 			if (error < epsilon) {
 				for(int l=0; l<this.layer.length; l++)
@@ -220,25 +209,25 @@ public class MultiLayerNeuralNet implements Classifier {
      * prediction, i.e., 0 or 1.
      */
     public int predict(int[] ex) {
-    	double[] a = new double[this.numNodes];
-		double[] in = new double[this.numNodes];
+    	double[] output = new double[this.numNodes];
+		double[] input = new double[this.numNodes];
 		
 		// First N nodes are input nodes
 		for (int i = 0; i < this.N; i++)
-			a[i] = ex[i];
+			output[i] = ex[i];
 		
     	// Compute outputs by propagating inputs forward
     	for (int l = 1; l < this.layer.length; l++) {
     		for (int dest = 0; dest < this.layer[l].getNumNodes(); dest++) {
     			for (int src : this.layer[l].getIncomingEdges(dest)) {
-    				in[getIdx(l,dest)] += this.layer[l-1].getWeight(src,dest)*a[getIdx(l-1,src)];
+    				input[getIdx(l,dest)] += this.layer[l-1].getWeight(src,dest)*output[getIdx(l-1,src)];
     			}
-    			a[getIdx(l,dest)] = this.activation.getActivation(in[getIdx(l,dest)]);
+    			output[getIdx(l,dest)] = this.activation.getActivation(input[getIdx(l,dest)]);
    			}
     	}
     	    	
     	// Return based on output of sigmoid function
-    	return predict(a[this.numNodes - 1]);
+    	return predict(output[this.numNodes - 1]);
     }
     
     /** Makes a prediction based on some input value a, which
