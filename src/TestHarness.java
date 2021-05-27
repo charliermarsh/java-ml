@@ -73,7 +73,8 @@ public class TestHarness {
                     c = new SingleLayerNeuralNet(d);
                     break;
                 case MLNN:
-                    c = new MultiLayerNeuralNet(d);
+                	Activation a = new Sigmoid();
+                    c = new MultiLayerNeuralNet(d, a);
                     break;
                 default:
                     c = new BaselineClassifier(d);
@@ -152,7 +153,8 @@ public class TestHarness {
                     c = new SingleLayerNeuralNet(d);
                     break;
                 case MLNN:
-                    c = new MultiLayerNeuralNet(d);
+                	Activation a = new Sigmoid();
+                    c = new MultiLayerNeuralNet(d, a);
                     break;
                 default:
                     c = new BaselineClassifier(d);
