@@ -225,21 +225,7 @@ public class kNN implements Classifier{
 		
 		double[][] distances = distanceSettingForBackward(numSets);
 		
-		// orderedIndices[i][j] is index of jth closest example to i
-		int[][] orderedIndices = new int[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-		for (int i = 0; i < orderedIndices.length; i++) {
-			// annoying Integer to int casting issues
-			Integer[] a = new Integer[this.dataSet.numTrainExs];
-			for (int j = 0; j < orderedIndices.length; j++) {
-				a[j] = j;
-			}
-			exComparator comp = new exComparator(distances[i], i);
-			comp.isDescending = true;
-			Arrays.sort(a, comp);
-			for (int j = 0; j < orderedIndices.length; j++) {
-				orderedIndices[i][j] = a[j];
-			}
-		}
+		int[][] orderedIndices = orderedIndices(distances);
 		
 		// calculate base error with no attribute elimination
 		double baselineError = calcError(orderedIndices);
@@ -285,6 +271,24 @@ public class kNN implements Classifier{
 		}
 		//System.out.printf("%d attributes removed.\n", sum);
 	}
+	private int[][] orderedIndices(double[][] distances) {
+		// orderedIndices[i][j] is index of jth closest example to i
+		int[][] orderedIndices = new int[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
+		for (int i = 0; i < orderedIndices.length; i++) {
+			// annoying Integer to int casting issues
+			Integer[] alpha = new Integer[this.dataSet.numTrainExs];
+			for (int j = 0; j < orderedIndices.length; j++) {
+				alpha[j] = j;
+			}
+			exComparator comparator = new exComparator(distances[i], i);
+			comparator.descending = true;
+			Arrays.sort(alpha, comparator);
+			for (int j = 0; j < orderedIndices.length; j++) {
+				orderedIndices[i][j] = alpha[j];
+			}
+		}
+		return orderedIndices;
+	}
 	private double[][] distanceSettingForBackward(int numSets) {
 		double[][] distances = setCrossValidationDistance(numSets);
 		for (int i = 0; i < distances.length; i++) {
@@ -323,22 +327,7 @@ public class kNN implements Classifier{
 		
 		int numSets=8;
 		double[][] distances = setCrossValidationDistance(numSets);
-		
-		// orderedIndices[i][j] is index of jth closest example to i
-		int[][] orderedIndices = new int[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-		for (int i = 0; i < orderedIndices.length; i++) {
-			// annoying Integer to int casting issues
-			Integer[] a = new Integer[this.dataSet.numTrainExs];
-			for (int j = 0; j < orderedIndices.length; j++) {
-				a[j] = j;
-			}
-			exComparator comp = new exComparator(distances[i], i);
-			comp.isDescending = true;
-			Arrays.sort(a, comp);
-			for (int j = 0; j < orderedIndices.length; j++) {
-				orderedIndices[i][j] = a[j];
-			}
-		}
+		int[][] orderedIndices = orderedIndices(distances);
 		
 		// calculate base error with no attribute elimination
 		double baselineError = calcError(orderedIndices);
@@ -479,6 +468,7 @@ public class kNN implements Classifier{
 	 * example as the reference example.
 	 */
 	private class exComparator implements Comparator {
+		public boolean descending;
 		private double[] dists;
 	    private int[] ex;
 	    private int exIndex = -1;
