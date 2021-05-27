@@ -397,6 +397,7 @@ public class kNN implements Classifier{
 				temporaryDistances[j][i] = temporaryDistances[i][j];
 			}
 		}
+		
 		return temporaryDistances;
 	}
 	private void removeAllAttributes() {
