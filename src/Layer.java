@@ -25,6 +25,8 @@ public class Layer {
 		this.incomingEdges = (LinkedList<Integer>[]) new LinkedList[this.numNodes];
 		this.outgoingEdges = (LinkedList<Integer>[]) new LinkedList[this.numNodes];
 		initEdges();
+		linkPrevLayer(0);
+		linkNextLayer(0);
 		
 		this.weights = new double[this.numNodes][this.nextNumNodes];
 		this.bestWeights = new double[this.numNodes][this.nextNumNodes];
@@ -39,21 +41,20 @@ public class Layer {
 	}
 	
 	private void linkPrevLayer(int prevStartNodeNum) { // incoming
-		for(int i = 0; i < this.numNodes; i++) {
-			for(int j = prevStartNodeNum; j < prevStartNodeNum + this.prevNumNodes; j++) {
-				this.incomingEdges[j].add(i);
+		for(int dest = 0; dest < this.numNodes; dest++) {
+			for(int src = prevStartNodeNum; src < prevStartNodeNum + this.prevNumNodes; src++) {
+				this.incomingEdges[dest].add(src);
 			}
 		}
 	}
 	
 	private void linkNextLayer(int nextStartNodeNum) { // outgoing
-		for(int i = 0; i < this.numNodes; i++) {
-			for(int j = nextStartNodeNum; j < nextStartNodeNum + this.nextNumNodes; j++) {
-				this.outgoingEdges[i].add(j);
+		for(int src = 0; src < this.numNodes; src++) {
+			for(int dest = nextStartNodeNum; dest < nextStartNodeNum + this.nextNumNodes; dest++) {
+				this.outgoingEdges[src].add(dest);
 			}
 		}
 	}
-	
 
 	public void setWeight(int src, int dest, double weight) {
 		this.weights[src][dest] = weight;
