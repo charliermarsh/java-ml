@@ -8,16 +8,8 @@ public class MultiLayerNeuralNet implements Classifier {
 	private final double learningRate = 0.5;
 	/* algorithm's momentum parameter. */
 	private final double momentumFactor = 0.1;
-	/* weights[i][j] is the weight on edge from node i -> j. 
-	 * as a special case, weights[i][i] is the threshold value
-	 * of the perceptron i. */
-	private double[][] weights;
-	/* outgoingEdges[i] is a list of edges from i. */
-	private final LinkedList<Integer>[] outgoingEdges;
-	/* incomingEdges[i] is a list of edges to i. */
-	private final LinkedList<Integer>[] incomingEdges;
 	/* layer[i] is a list of nodes in layer i. */
-	private final LinkedList<Integer>[] layer;
+	private final Layer[] layer;
 	/* data set on which to make predictions. */
 	private final DataSet d;
 	/* number of attributes in data set. */
@@ -38,15 +30,15 @@ public class MultiLayerNeuralNet implements Classifier {
 	/** Runs an activation threshold function g on some
 	 * input value d.
 	 */
-	private double g(double d) {
+	private double sigmoid(double d) {
 		return 1.0/(1.0 + Math.exp(-d));
 	}
 	
 	/** Runs an activation threshold function g's derivative 
 	 * on some input value d.
 	 */
-	private double gPrime(double d) {
-		double g = g(d);
+	private double sigmoidPrime(double d) {
+		double g = sigmoid(d);
 		return g * (1.0 - g);
 	}
 	
@@ -54,9 +46,9 @@ public class MultiLayerNeuralNet implements Classifier {
 	 * Trains the neural network on every example in data set d
 	 * using previous deltas prevDelta.
 	 */
-	private void backProp(DataSet d, double[] prevDelta) {
+	private void backPropagation(DataSet d, double[] prevDelta) {
 		for (int i = 0; i < d.numTrainExs; i++)
-			backProp(d.trainEx[i], d.trainLabel[i], prevDelta);
+			backPropagation(d.trainEx[i], d.trainLabel[i], prevDelta);
 	}
 	
 	/** Trains the neural network on an example ex by using
@@ -64,8 +56,8 @@ public class MultiLayerNeuralNet implements Classifier {
 	 * Example ex is known to be of classification label. Uses
 	 * 0 for all previous deltas.
 	 */
-	private void backProp(int[] ex, int label) {
-		backProp(ex, label, new double[this.numNodes]);
+	private void backPropagation(int[] ex, int label) {
+		backPropagation(ex, label, new double[this.numNodes]);
 	}
 	
 	/** Trains the neural network on an example ex by using
@@ -75,77 +67,84 @@ public class MultiLayerNeuralNet implements Classifier {
 	 * to add momentum to the gradient descent calculation. Stores
 	 * the calculated deltas in prevDelta for future use.
 	 */
-	private void backProp(int[] ex, int label, double[] prevDelta) {
+	private void backPropagation(int[] ex, int label, double[] prevDelta) {
 		// output of each node
-		double[] a = new double[this.numNodes];
+		double[] output = new double[this.numNodes];
 		// input to each node
-		double[] in = new double[this.numNodes];
+		double[] input = new double[this.numNodes];
 		// delta for adjusting each edge weight
 		double[] delta = new double[this.numNodes];
 		
 		// first N nodes are input nodes
 		for (int i = 0; i < this.N; i++)
-			a[i] = ex[i];
+			output[i] = ex[i];
 		
-		// compute outputs by propagating inputs forward
-		for (int l = 1; l < this.layer.length; l++) {
-			for (int dest : this.layer[l]) {
-				for (int src : this.incomingEdges[dest]) {
-					in[dest] += this.weights[src][dest]*a[src];
-				}
-				// subtract threshold value
-				in[dest] -= this.weights[dest][dest];
-				a[dest] = g(in[dest]);
-			}
-		}
+		forwardPass(output, input);
 		// return if accurate prediction
-		if (predict(a[this.numNodes - 1]) == label) return;
+		if (predict(output[this.numNodes - 1]) == label) return;
 		
-		// compute deltas by propagating backward
-		// degin with delta of output layer as base case
+		backwardPass(label, prevDelta, output, delta);
+		
+		adjustWeights(output, delta);
+	}
+
+	private int getIdx(int layerNum, int nodeNum) {
+		int idx = 0;
+		for(int l=1; l<layerNum; l++) {
+			idx += this.layer[layerNum-1].getNumNodes();
+		}
+		idx = nodeNum;
+		
+		return idx;
+	}
+	/** adjust weights
+	 */
+	private void adjustWeights(double[] output, double[] delta) {
+		for(int l=0; l<this.layer.length - 1; l++) {
+			for (int i = 0; i < this.layer[l].getNumNodes(); i++) {
+				for (int j = 0; j < this.layer[l+1].getNumNodes(); j++) {
+					this.layer[l].setWeight( i, j, this.layer[l].getWeight(i, j) + this.learningRate*output[ getIdx(l,i) ]*delta[ getIdx(l+1,j)]);
+				}
+			}	
+		}
+	}
+
+	/** compute deltas by propagating backward
+		degin with delta of output layer as base case
+	 */
+	private void backwardPass(int label, double[] prevDelta, double[] output, double[] delta) {
 		delta[this.numNodes - 1] = 
-				gPrime(a[this.numNodes - 1])*(label - (int)Math.round(a[this.numNodes - 1])); 
+				sigmoidPrime(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
 		for (int l = this.layer.length - 2; l >= 0; l--) {
-			for (int src : this.layer[l]) {
+			for (int src =0 ; src < this.layer[l].getNumNodes(); src++) {
 				double sum = 0;
-				for (int dest : this.outgoingEdges[src]) {
-					sum += this.weights[src][dest]*delta[dest];
+				for (int dest : this.layer[l].getOutgoingEdges(src)) {
+					sum += this.layer[l].getWeight(src, dest)*delta[ getIdx(l+1,dest) ];
 				}
 				// compute delta and add momentum factor
-				delta[src] = gPrime(a[src])*sum;
-				delta[src] += this.momentumFactor*prevDelta[src];
+				delta[getIdx(l,src)] = sigmoidPrime(output[ getIdx(l,src) ])*sum;
+				delta[getIdx(l,src)] += this.momentumFactor*prevDelta[getIdx(l,src)];
 				// store momentum for future use
-				prevDelta[src] = delta[src];
-			}
-		}
-		
-		// adjust weights
-		for (int i = 0; i < this.weights.length; i++) {
-			for (int j = i+1; j < this.weights.length; j++) {
-				this.weights[i][j] += this.learningRate*a[i]*delta[j];
-				this.weights[j][i] = this.weights[i][j];
+				prevDelta[getIdx(l,src)] = delta[getIdx(l,src)];
 			}
 		}
 	}
-	
-	/** Returns a random weight for an edge. */
-	private double randomWeight() {
-		return 0.5 - Math.random();
-	}
-	
-	
-	/** Resets the weights of a neural network to avoid getting caught
-	 * in a local minimum.
+
+	/** compute outputs by propagating inputs forward
 	 */
-	private void randomizeWeights() {
-		for (int i = 0; i < this.weights.length; i++) {
-			for (int j = i+1; j < this.weights.length; j++) {
-				this.weights[i][j] = randomWeight();
-				this.weights[j][i] = this.weights[i][j];
+	private void forwardPass(double[] output, double[] input) {
+		for (int l = 1; l < this.layer.length; l++) {
+			for (int dest = 0; dest < this.layer[l].getNumNodes(); dest++) {
+				for (int src : this.layer[l].getIncomingEdges(dest)) {
+					input[ getIdx(l,dest) ] += this.layer[l-1].getWeight(src,dest)*output[ getIdx(l-1,src) ];
+				}
+				// subtract threshold value
+				input[ getIdx(l,dest) ] -= this.layer[l-1].getWeight(dest,dest);
+				output[ getIdx(l,dest) ] = sigmoid(input[ getIdx(l,dest) ]);
 			}
 		}
 	}
-	
+
 	/** Constructor for the MultiLayerNeuralNet class that 
 	 * creates a multi-layer, feed-forward neural network 
 	 * from a data set.
@@ -156,62 +155,45 @@ public class MultiLayerNeuralNet implements Classifier {
 		this.N = this.d.numAttrs;
 		// number of nodes in hidden layer
 		int numHidden = this.N;
+		int numInput = this.N;
+		int numOutput = 1;
 		this.numNodes = this.N + numHidden + 1;
-		this.weights = new double[this.numNodes][this.numNodes];
-		randomizeWeights();
-		// create and initialize list of edges
-		this.incomingEdges = (LinkedList<Integer>[]) new LinkedList[this.numNodes];
-		this.outgoingEdges = (LinkedList<Integer>[]) new LinkedList[this.numNodes];
-		for (int i = 0; i < this.numNodes; i++) {
-			this.incomingEdges[i] = new LinkedList<Integer>();
-			this.outgoingEdges[i] = new LinkedList<Integer>();
-		}
 		// number of layers to be included
 		int numLayers = 3;
-		this.layer = (LinkedList<Integer>[]) new LinkedList[numLayers];
-		for (int i = 0; i < numLayers; i++)
-			this.layer[i] = new LinkedList<Integer>();
+		this.layer = new Layer[numLayers];		
+		Layer inputLayer = new Layer(numInput, 0, numHidden);
+		Layer hiddenLayer = new Layer(numHidden, numInput, numOutput);
+		Layer outputLayer = new Layer(numOutput, numHidden, 0);
+		this.layer[0] = inputLayer;
+		this.layer[1] = hiddenLayer;
+		this.layer[2] = outputLayer;
 
-		/* Create first layer and links to hidden layer. */
-		for (int i = 0; i < this.N; i++) {
-			this.layer[0].add(i);
-			// add incoming and outgoing edges
-			for (int j = this.N; j < this.N + numHidden; j++) {
-				this.outgoingEdges[i].add(j);
-				this.incomingEdges[j].add(i);
-			}
-		}
-		
-		/* Create second layer and links to third layer. */
-		for (int i = this.N; i < this.N + numHidden; i++) {
-			this.layer[1].add(i);
-			this.incomingEdges[this.numNodes - 1].add(i);
-			this.outgoingEdges[i].add(this.numNodes - 1);
-		}
-		
-		/* Create list of third layer (output node). */ 
-		this.layer[2].add(this.numNodes - 1);
+		train();
+	}
 
-		// train neural net on each training example
-		// run until epsilon threshold error is breached
+	/** train neural net on each training example
+		run until epsilon threshold error is breached
+	 */
+	private void train() {
 		double epsilon = 0.05;
 		double minError = Double.MAX_VALUE;
 		double lastError = Double.MAX_VALUE;
-		double[][] bestWeights = new double[this.weights.length][this.weights.length];
 		double[] prevDelta = new double[this.numNodes];
-		int maxRuns = 100;
+		int maxRuns = 1;
 		for (int runs = 0; runs < maxRuns; runs++) {
 			// run back prop
-			backProp(this.d, prevDelta);
+			backPropagation(this.d, prevDelta);
 			double error = error(this.d);
 			// if error is sufficiently low, cut-off
 			if (error < epsilon) {
-				bestWeights = this.weights;
+				for(int l=0; l<this.layer.length; l++)
+					this.layer[l].assignBestWeights();
 				break;
 			}
 			// if error has not improved, reset
 			else if (error >= lastError) {
-				randomizeWeights();
+				for(int l=0; l<this.layer.length; l++)
+					this.layer[l].randomizeWeights();
 				lastError = Double.MAX_VALUE;
 			}
 			else {
@@ -219,13 +201,14 @@ public class MultiLayerNeuralNet implements Classifier {
 				// if error is best seen, remember weights
 				if (error < minError) {
 					minError = error;
-					for (int i = 0; i < this.weights.length; i++)
-						System.arraycopy(this.weights[i], 0, bestWeights[i], 0, this.weights.length);
+					for(int l=0; l<this.layer.length; l++)
+						this.layer[l].updateWeights();
 				}
 			}
 		}
 		// assign permanent weights to the best weights observed
-		this.weights = bestWeights;
+		for(int l=0; l<this.layer.length; l++)
+			this.layer[l].assignWeights();
 	}
 
     /** A method for predicting the label of a given example <tt>ex</tt>
@@ -243,11 +226,11 @@ public class MultiLayerNeuralNet implements Classifier {
 		
     	// Compute outputs by propagating inputs forward
     	for (int l = 1; l < this.layer.length; l++) {
-    		for (int dest : this.layer[l]) {
-    			for (int src : this.incomingEdges[dest]) {
-    				in[dest] += this.weights[src][dest]*a[src];
+    		for (int dest = 0; dest < this.layer[l].getNumNodes(); dest++) {
+    			for (int src : this.layer[l].getIncomingEdges(dest)) {
+    				in[dest] += this.layer[l-1].getWeight(src,dest)*a[src];
     			}
-    			a[dest] = g(in[dest]);
+    			a[dest] = sigmoid(in[dest]);
    			}
     	}
     	    	
