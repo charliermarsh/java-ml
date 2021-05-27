@@ -246,7 +246,7 @@ public class kNN implements Classifier{
 
 			// if error improved, keep attribute eliminated; else, retain
 			boolean errorImproved = adjustedError < baselineerror;
-			if (errorImproved) {
+			if ( errorImproved ) {
 				this.isEliminatedAttr[m] = true;
 				baselineerror = adjustedError;
 				newdistance = temporaryDistances;
@@ -371,7 +371,7 @@ public class kNN implements Classifier{
 
 				// if error improved, keep attribute eliminated; else, retain
 				boolean errorImproved = ( adjustedError < minError );
-				if (errorImproved) {
+				if ( errorImproved ) {
 					minError = adjustedError;
 					minErrorIndex = m;
 					minErrorDistances = newDistances;
@@ -379,7 +379,8 @@ public class kNN implements Classifier{
 			}
 			
 			boolean baselineErrorImproved = (minError < baselineError);
-			if (baselineErrorImproved) {
+			
+			if ( baselineErrorImproved ) {
 				this.isEliminatedAttr[minErrorIndex] = false;
 				distances = minErrorDistances;
 				attributeAdded = true;
@@ -392,8 +393,8 @@ public class kNN implements Classifier{
 		double[][] temporaryDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
 		for (int i = 0; i < distances.length; i++) {
 			for (int j = i+1; j < distances.length; j++) {
-				temporaryDistances[i][j] = distances[i][j] - 
-						Math.abs(this.dataSet.trainEx[i][m] + this.dataSet.trainEx[j][m]);
+				double distanceCalculation = strategy.calcPlusDistance(this.dataSet.trainEx[i][m], this.dataSet.trainEx[j][m]);
+				temporaryDistances[i][j] = distances[i][j] - distanceCalculation;
 				temporaryDistances[j][i] = temporaryDistances[i][j];
 			}
 		}
