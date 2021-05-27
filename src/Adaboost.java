@@ -5,7 +5,6 @@
  *
  * http://csmr.ca.sandia.gov/~wpk/pubs/publications/pami06.pdf
  */
-import java.io.*;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -97,7 +96,7 @@ public class Adaboost implements Classifier{
      *
      */
     public static void main(String argv[])
-        throws FileNotFoundException, IOException {
+        throws Exception {
 
         if (argv.length < 2) {
             System.err.println("argument: filestem forestSize");
@@ -110,7 +109,8 @@ public class Adaboost implements Classifier{
          * Create a cross validation set - just takes the last crossSize
          * elements of the set as a cross set.
          */
-        DiscreteDataSet d = new DiscreteDataSet(filestem);
+    	DataSetInput input = new FileInput(filestem);
+        DiscreteDataSet d = new DiscreteDataSet(input);
 
         /*
          * Do the Knuth Shuffle!  It sounds like more fun than it is!

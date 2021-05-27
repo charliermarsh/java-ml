@@ -1,12 +1,19 @@
 import java.io.FileNotFoundException;
-import java.io.IOException;
 
-public class FileInput {
+public class FileInput implements DataSetInput {
+
 	private static final String ATTRIBUTE_INFO_FILE_EXTENSION = ".names";
 	private static final String TRAIN_EXAMPLE_FILE_EXTENSION = ".train";
 	private static final String TEST_EXAMPLE_FILE_EXTENSION = ".test";
+	private String filestem;
 	
-	public void read(DataSet dataSet, String filestem) throws FileNotFoundException, IOException {
+	public FileInput(String filestem) {
+		super();
+		this.filestem = filestem;
+	}
+	
+	public void readTo(DataSet dataSet) throws Exception {
+
 		DataSetFileReader classNameReader 
 			= new ClassNameReader(filestem+ATTRIBUTE_INFO_FILE_EXTENSION, dataSet);
 		classNameReader.read();

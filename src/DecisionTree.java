@@ -3,7 +3,6 @@
  * constructor takes the training set and the attributes to use for building
  * the tree.  Basic algorithm based on R\&N 18.3: Page 702.
  */
-import java.io.*;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -295,7 +294,7 @@ public class DecisionTree implements Classifier{
      * Simple main for testing.
      */
     public static void main(String argv[])
-        throws FileNotFoundException, IOException {
+        throws Exception {
 
         if (argv.length < 1) {
             System.err.println("argument: filestem");
@@ -308,7 +307,8 @@ public class DecisionTree implements Classifier{
          * Create a cross validation set - just takes the last crossSize
          * elements of the set as a cross set.
          */
-        DiscreteDataSet d = new DiscreteDataSet(filestem);
+    	DataSetInput input = new FileInput(filestem);
+        DiscreteDataSet d = new DiscreteDataSet(input);
 
         /*
          * Do the Knuth Shuffle!  It sounds like more fun than it is!

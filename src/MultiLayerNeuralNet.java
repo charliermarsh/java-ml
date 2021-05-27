@@ -1,7 +1,4 @@
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.LinkedList;
-import java.util.Arrays;
 
 public class MultiLayerNeuralNet implements Classifier {
 	/* algorithm's learning rate. */
@@ -283,9 +280,10 @@ public class MultiLayerNeuralNet implements Classifier {
     /** A simple main for testing this algorithm.  This main reads a
      * filestem from the command line, runs the learning algorithm on
      * this dataset, and prints the test predictions to filestem.testout.
+     * @throws Exception 
      */
     public static void main(String argv[])
-    		throws FileNotFoundException, IOException {
+    		throws Exception {
     	if (argv.length < 1) {
     		System.err.println("argument: filestem");
     		return;
@@ -293,7 +291,8 @@ public class MultiLayerNeuralNet implements Classifier {
 
     	String filestem = argv[0];
 
-    	DataSet d = new BinaryDataSet(filestem);
+    	DataSetInput input = new FileInput(filestem);
+    	DataSet d = new BinaryDataSet(input);
 
     	Classifier c = new MultiLayerNeuralNet(d);
 
