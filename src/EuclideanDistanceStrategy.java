@@ -1,4 +1,3 @@
-
 public class EuclideanDistanceStrategy implements DistanceStrategy{
 	@Override
 	public double calcDistance(int pos1, int pos2) {
