@@ -134,8 +134,12 @@ public class DataSet {
 		}
 	}
 
-	protected boolean isNumericAttribute(int attributeNum) {
-		return FileInput.isNumericAttribute(this, attributeNum);
+	public void setAttributeNumeric(int attributeNum) {
+		attrVals[attributeNum] = null;
+	}
+
+	public boolean isNumericAttribute(int attributeNum) {
+		return attrVals[attributeNum] == null;
 	}
 
 }
