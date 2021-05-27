@@ -217,15 +217,13 @@ public class kNN implements Classifier {
 		// iterate over each attribute
 		for (int m = 0; m < this.d.numAttrs; m++) {
 			double[][] temporaryDistances = new double[this.d.numTrainExs][this.d.numTrainExs];
-			
 			temporaryDistances = linearDistanceUpdate(distances, m);
-			
 			orderedIndice = computeNewNearestK(orderedIndice, temporaryDistances);
-			
 			double adjustedError = error(orderedIndice);
 
 			// if error improved, keep attribute eliminated; else, retain
-			if (adjustedError < baselineerror) {
+			boolean errorImproved = adjustedError < baselineerror;
+			if (errorImproved) {
 				this.elimAttr[m] = true;
 				baselineerror = adjustedError;
 				newdistance = temporaryDistances;
@@ -236,7 +234,6 @@ public class kNN implements Classifier {
 		}
 		return newdistance;
 	}
-
 	private int[][] computeNewNearestK(int[][] orderedIndice, double[][] temporaryDistances) {
 		// compute new k nearest
 		int[][] orderedIndices = new int[this.d.numTrainExs][this.d.numTrainExs];
@@ -278,9 +275,9 @@ public class kNN implements Classifier {
 			for (int j = 0; j < orderedIndices.length; j++) {
 				a[j] = j;
 			}
-			exComparator comp = new exComparator(distances[i], i);
-			comp.descending = true;
-			Arrays.sort(a, comp);
+			exComparator comparator = new exComparator(distances[i], i);
+			comparator.descending = true;
+			Arrays.sort(a, comparator);
 			for (int j = 0; j < orderedIndices.length; j++) {
 				orderedIndices[i][j] = a[j];
 			}
@@ -325,56 +322,59 @@ public class kNN implements Classifier {
 	 */
 	private void forwardsSelection() {
 		removeAllAttributes();
-		
 		int numSets=8;
 		double[][] distances = setCrossValidationDistance(numSets);
-		
 		int[][] orderedIndices = orderedIndices(distances);
-		
 		// calculate base error with no attribute elimination
 		double baselineError = error(orderedIndices);
-		
 		boolean attributeAdded;
 		do {
 			attributeAdded = false;
 			double minError = Double.POSITIVE_INFINITY;
 			int minErrorIndex = -1;
-			double[][] minErrorDists = new double[this.d.numTrainExs][this.d.numTrainExs];
+			double[][] minErrorDistances = new double[this.d.numTrainExs][this.d.numTrainExs];
 			
 			// iterate over each attribute
 			for (int m = 0; m < this.d.numAttrs; m++) {
-				if (!this.elimAttr[m]) continue;
+				boolean mthEliminateAttributNotEmpty = !this.elimAttr[m];
+				if (mthEliminateAttributNotEmpty) continue;
 				
-				double[][] newDists = new double[this.d.numTrainExs][this.d.numTrainExs];
-
-				// linear-time distance update
-				for (int i = 0; i < distances.length; i++) {
-					for (int j = i+1; j < distances.length; j++) {
-						newDists[i][j] = distances[i][j] + 
-								Math.abs(this.d.trainEx[i][m] - this.d.trainEx[j][m]);
-						newDists[j][i] = newDists[i][j];
-					}
-				}
-
-				computeNewNearestK(orderedIndices, newDists);
+				double[][] newDistances = new double[this.d.numTrainExs][this.d.numTrainExs];
+				newDistances = linearDistanceUpdate(distances, m);
+				
+				computeNewNearestK(orderedIndices, newDistances);
 
 				double adjustedError = error(orderedIndices);
 
 				// if error improved, keep attribute eliminated; else, retain
-				if (adjustedError < minError) {
+				boolean errorImproved = (adjustedError < minError);
+				if (errorImproved) {
 					minError = adjustedError;
 					minErrorIndex = m;
-					minErrorDists = newDists;
+					minErrorDistances = newDistances;
 				}
 			}
 			
-			if (minError < baselineError) {
+			boolean baselineErrorImproved = minError < baselineError;
+			if (baselineErrorImproved) {
 				this.elimAttr[minErrorIndex] = false;
-				distances = minErrorDists;
+				distances = minErrorDistances;
 				attributeAdded = true;
 				//System.out.println("Added attribute " + minErrorIndex);
 			}
 		} while (attributeAdded);
+	}
+	private double[][] linearForwardDistanceUpdate(double[][] distances, int m) {
+		// linear-time distance update
+		double[][] temporaryDistances = new double[this.d.numTrainExs][this.d.numTrainExs];
+		for (int i = 0; i < distances.length; i++) {
+			for (int j = i+1; j < distances.length; j++) {
+				temporaryDistances[i][j] = distances[i][j] - 
+						Math.abs(this.d.trainEx[i][m] + this.d.trainEx[j][m]);
+				temporaryDistances[j][i] = temporaryDistances[i][j];
+			}
+		}
+		return temporaryDistances;
 	}
 
 	private void removeAllAttributes() {
