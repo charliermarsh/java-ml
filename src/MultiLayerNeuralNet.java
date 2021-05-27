@@ -16,6 +16,8 @@ public class MultiLayerNeuralNet implements Classifier {
 	private final int N;
 	/* number of nodes in the network. */
 	private final int numNodes;
+	/* activation function */
+	private final Activation activation;
 	
 	/** Calculates the error on the training examples of
 	 * data set d. */
@@ -27,20 +29,20 @@ public class MultiLayerNeuralNet implements Classifier {
 		return sum/d.numTrainExs;
 	}
 	
-	/** Runs an activation threshold function g on some
-	 * input value d.
-	 */
-	private double sigmoid(double d) {
-		return 1.0/(1.0 + Math.exp(-d));
-	}
-	
-	/** Runs an activation threshold function g's derivative 
-	 * on some input value d.
-	 */
-	private double sigmoidPrime(double d) {
-		double g = sigmoid(d);
-		return g * (1.0 - g);
-	}
+//	/** Runs an activation threshold function g on some
+//	 * input value d.
+//	 */
+//	private double sigmoid(double d) {
+//		return 1.0/(1.0 + Math.exp(-d));
+//	}
+//	
+//	/** Runs an activation threshold function g's derivative 
+//	 * on some input value d.
+//	 */
+//	private double sigmoidPrime(double d) {
+//		double g = sigmoid(d);
+//		return g * (1.0 - g);
+//	}
 	
 	/**
 	 * Trains the neural network on every example in data set d
@@ -114,7 +116,7 @@ public class MultiLayerNeuralNet implements Classifier {
 	 */
 	private void backwardPass(int label, double[] prevDelta, double[] output, double[] delta) {
 		delta[this.numNodes - 1] = 
-				sigmoidPrime(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
+				this.activation.getDerivation(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
 		for (int l = this.layer.length - 2; l >= 0; l--) {
 			for (int src =0 ; src < this.layer[l].getNumNodes(); src++) {
 				double sum = 0;
@@ -122,7 +124,7 @@ public class MultiLayerNeuralNet implements Classifier {
 					sum += this.layer[l].getWeight(src, dest)*delta[ getIdx(l+1,dest) ];
 				}
 				// compute delta and add momentum factor
-				delta[getIdx(l,src)] = sigmoidPrime(output[ getIdx(l,src) ])*sum;
+				delta[getIdx(l,src)] = this.activation.getDerivation(output[ getIdx(l,src) ])*sum;
 				delta[getIdx(l,src)] += this.momentumFactor*prevDelta[getIdx(l,src)];
 				// store momentum for future use
 				prevDelta[getIdx(l,src)] = delta[getIdx(l,src)];
@@ -140,7 +142,7 @@ public class MultiLayerNeuralNet implements Classifier {
 				}
 				// subtract threshold value
 				input[ getIdx(l,dest) ] -= this.layer[l-1].getWeight(dest,dest);
-				output[ getIdx(l,dest) ] = sigmoid(input[ getIdx(l,dest) ]);
+				output[ getIdx(l,dest) ] = this.activation.getActivation(input[ getIdx(l,dest) ]);
 			}
 		}
 	}
@@ -150,9 +152,10 @@ public class MultiLayerNeuralNet implements Classifier {
 	 * from a data set.
 	 */
 	@SuppressWarnings("unchecked")
-	public MultiLayerNeuralNet(DataSet d) {		
+	public MultiLayerNeuralNet(DataSet d, Activation a) {		
 		this.d = d;
 		this.N = this.d.numAttrs;
+		this.activation = a;
 		// number of nodes in hidden layer
 		int numHidden = this.N;
 		int numInput = this.N;
@@ -230,7 +233,7 @@ public class MultiLayerNeuralNet implements Classifier {
     			for (int src : this.layer[l].getIncomingEdges(dest)) {
     				in[getIdx(l,dest)] += this.layer[l-1].getWeight(src,dest)*a[getIdx(l-1,src)];
     			}
-    			a[getIdx(l,dest)] = sigmoid(in[getIdx(l,dest)]);
+    			a[getIdx(l,dest)] = this.activation.getActivation(in[getIdx(l,dest)]);
    			}
     	}
     	    	
@@ -277,8 +280,10 @@ public class MultiLayerNeuralNet implements Classifier {
     	String filestem = argv[0];
 
     	DataSet d = new BinaryDataSet(filestem);
-
-    	Classifier c = new MultiLayerNeuralNet(d);
+    	
+    	Activation a = new Sigmoid();
+    	
+    	Classifier c = new MultiLayerNeuralNet(d, a);
 
     	d.printTestPredictions(c, filestem);
     }
