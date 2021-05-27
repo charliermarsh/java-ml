@@ -626,7 +626,7 @@ public class kNN implements Classifier{
 
 	DataSet d = new BinaryDataSet(filestem);
 
-	Classifier c = new kNN(d, new kNNDistanceStrategy());
+	Classifier c = new kNN(d, new EuclideanDistanceStrategy());
 	
 
 	d.printTestPredictions(c, filestem);
