@@ -355,55 +355,49 @@ public class kNN implements Classifier{
 			attributeAdded = false;
 			double minError = Double.POSITIVE_INFINITY;
 			int minErrorIndex = -1;
-			double[][] minErrorDists = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
+			double[][] minErrorDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
 			
 			// iterate over each attribute
 			for (int m = 0; m < this.dataSet.numAttrs; m++) {
-				if (!this.isEliminatedAttr[m]) continue;
+				boolean mthEliminateAttributNotEmpty = !this.isEliminatedAttr[m];
+				if (mthEliminateAttributNotEmpty) continue;
 				
-				double[][] newDists = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-
-				// linear-time distance update
-				for (int i = 0; i < distances.length; i++) {
-					for (int j = i+1; j < distances.length; j++) {
-						newDists[i][j] = distances[i][j] + 
-								Math.abs(this.dataSet.trainEx[i][m] - this.dataSet.trainEx[j][m]);
-						newDists[j][i] = newDists[i][j];
-					}
-				}
-
-				// compute new k nearest
-				for (int i = 0; i < this.dataSet.numTrainExs; i++) {
-					// annoying Integer to int casting issues
-					Integer[] a = new Integer[this.dataSet.numTrainExs];
-					for (int j = 0; j < orderedIndices.length; j++) {
-						a[j] = orderedIndices[i][j];
-					}
-					exComparator comp = new exComparator(newDists[i], i);
-					comp.isDescending = true;
-					Arrays.sort(a, comp);
-					for (int j = 0; j < orderedIndices.length; j++) {
-						orderedIndices[i][j] = a[j];
-					}
-				}
+				double[][] newDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
+				newDistances = linearForwardDistanceUpdate(distances, m);
+				
+				computeNewNearestK(orderedIndices, newDistances);
 
 				double adjustedError = calcError(orderedIndices);
 
 				// if error improved, keep attribute eliminated; else, retain
-				if (adjustedError < minError) {
+				boolean errorImproved = (adjustedError < minError);
+				if (errorImproved) {
 					minError = adjustedError;
 					minErrorIndex = m;
-					minErrorDists = newDists;
+					minErrorDistances = newDistances;
 				}
 			}
 			
-			if (minError < baselineError) {
+			boolean baselineErrorImproved = minError < baselineError;
+			if (baselineErrorImproved) {
 				this.isEliminatedAttr[minErrorIndex] = false;
-				distances = minErrorDists;
+				distances = minErrorDistances;
 				attributeAdded = true;
 				//System.out.println("Added attribute " + minErrorIndex);
 			}
 		} while (attributeAdded);
+	}
+	private double[][] linearForwardDistanceUpdate(double[][] distances, int m) {
+		// linear-time distance update
+		double[][] temporaryDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
+		for (int i = 0; i < distances.length; i++) {
+			for (int j = i+1; j < distances.length; j++) {
+				temporaryDistances[i][j] = distances[i][j] - 
+						Math.abs(this.dataSet.trainEx[i][m] + this.dataSet.trainEx[j][m]);
+				temporaryDistances[j][i] = temporaryDistances[i][j];
+			}
+		}
+		return temporaryDistances;
 	}
 	private void removeAllAttributes() {
 		// remove all attributes
