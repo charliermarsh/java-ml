@@ -9,8 +9,6 @@ public class kNN implements Classifier{
 	
 	// data set of training examples
 	private DataSet dataSet;
-	// distance strategy
-	private DistanceStrategy strategy;
 	// minimum possible value of k
 	private final int kMin = 1;
 	// maximum possible value of k
@@ -23,18 +21,50 @@ public class kNN implements Classifier{
 	private final double learningRate = 0.05;
 	// instanceWeights for training examples
 	private double[] instanceWeights;
+	// use 8 different sets for cross validation
+	private int numSets = 8;
+	private Strategy strategy;
 	
+	public DataSet getDataSet() {
+		return dataSet;
+	}
+	public int getkMin() {
+		return kMin;
+	}
 
+	public int getkMax() {
+		return kMax;
+	}
+
+	public int getkOpt() {
+		return kOpt;
+	}
+
+	public boolean[] getIsEliminatedAttr() {
+		return isEliminatedAttr;
+	}
+
+	public double getLearningRate() {
+		return learningRate;
+	}
+
+	public double[] getInstanceWeights() {
+		return instanceWeights;
+	}
+	
+	public Strategy getStrategy() {
+		return strategy;
+	}
 	/** Constructor for the kNN machine learning algorithm.
 	 *  Takes as argument a data set. From then on, examples
 	 *  in the data set can be fed to predict() in return for
 	 *  classifications.
 	 */
-	public kNN(DataSet dataSet, DistanceStrategy strategy) {
+	public kNN(DataSet dataSet, Strategy strategy) {
 		/* Setup array labelledData so that it contains all the training
 		   data attributes along with that example's label. */
 		this.dataSet = dataSet;
-		this.strategy=strategy;
+		this.strategy = strategy;
 		this.isEliminatedAttr = new boolean[this.dataSet.numAttrs];
 		this.instanceWeights = new double[this.dataSet.numTrainExs];
 		this.kOpt = findOptimalK(this.kMin, this.kMax);
@@ -43,15 +73,14 @@ public class kNN implements Classifier{
 		backwardsElimination();
 		traininstanceWeights(1);		
 	}
-
 	/** Constructor for the kNN machine learning algorithm.
 	 *  Mainly used for testing the weight training heuristic.
 	 */
-	public kNN(DataSet dataSet, int kOpt, int numIteration, DistanceStrategy strategy) {
+	public kNN(DataSet dataSet, int kOpt, int numIteration, Strategy strategy){
 		/* Setup array labelledData so that it contains all the training
 		   data attributes along with that example's label. */
 		this.dataSet = dataSet;
-		this.strategy=strategy;
+		this.strategy = strategy;
 		this.isEliminatedAttr = new boolean[this.dataSet.numAttrs];
 		this.instanceWeights = new double[this.dataSet.numTrainExs];
 		this.kOpt = kOpt;
@@ -72,7 +101,7 @@ public class kNN implements Classifier{
 	 *  be performed.
 	 */
 	public kNN(DataSet dataSet, int from, int to, int kOpt, 
-			boolean[] isEliminatedAttr, double[] instanceWeights, DistanceStrategy strategy) {
+			boolean[] isEliminatedAttr, double[] instanceWeights, Strategy strategy){
 		/* Setup array labelledData so that it contains all the training
 		   data attributes along with that example's label. */
 		// create data set, excluding firstEx to lastEx examples
@@ -121,7 +150,7 @@ public class kNN implements Classifier{
 		for (int i = 0; i < len; i++) {
 			// skip if attribute is eliminated
 			if (this.isEliminatedAttr[i] == true) continue;
-			distance += strategy.calcDistance(vector1[i], vector2[i]);
+			distance += this.strategy.getDistanceStrategy().calcDistance(vector1[i], vector2[i]);
 		}
         return distance;
     }
@@ -132,8 +161,6 @@ public class kNN implements Classifier{
 	private double calcErrorWithCrossValidation() {
 		double error = 0.0;
 		
-		// use 8 different sets for cross validation
-		int numSets = 8;
 		for (int setNum = 0; setNum < numSets; setNum++) {
 			int from = setNum*this.dataSet.numTrainExs/numSets;
 			int to = (setNum+1)*this.dataSet.numTrainExs/numSets;
@@ -198,8 +225,6 @@ public class kNN implements Classifier{
 	private int[][] kNearestWithCrossValidation() {
 		int[][] kNNIndicesSet = new int[this.dataSet.numTrainExs][this.kOpt];
 
-		// use 8 different sets for cross validation
-		int numSets = 8;
 		for (int setNum = 0; setNum < numSets; setNum++) {
 			int from = setNum*this.dataSet.numTrainExs/numSets;
 			int to = (setNum+1)*this.dataSet.numTrainExs/numSets;
@@ -214,16 +239,15 @@ public class kNN implements Classifier{
 		}
 		return kNNIndicesSet;
 	}
-	
 	/** Uses backwards elimination to remove attributes from consideration
 	 * that decrease the classifier's performance. To avoid recomputing
 	 * distances, employs a linear-time distance update that just alters
 	 * pre-computed distances based on attribute in question.
 	 */
 	private void backwardsElimination() {
-		int numSets=8;
+
 		
-		double[][] distances = distanceSettingForBackward(numSets);
+		double[][] distances = distanceSettingForBackward();
 		
 		int[][] orderedIndices = orderedIndices(distances);
 		
@@ -281,7 +305,7 @@ public class kNN implements Classifier{
 		double[][] temporaryDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
 		for (int i = 0; i < distances.length; i++) {
 			for (int j = i+1; j < distances.length; j++) {
-				double distanceCalculation = strategy.calcDistance(this.dataSet.trainEx[i][m], this.dataSet.trainEx[j][m]);
+				double distanceCalculation = strategy.getDistanceStrategy().calcDistance(this.dataSet.trainEx[i][m], this.dataSet.trainEx[j][m]);
 				temporaryDistances[i][j] = distances[i][j] - distanceCalculation;
 				temporaryDistances[j][i] = temporaryDistances[i][j];
 			}
@@ -307,8 +331,8 @@ public class kNN implements Classifier{
 		}
 		return orderedIndices;
 	}
-	private double[][] distanceSettingForBackward(int numSets) {
-		double[][] distances = setCrossValidationDistance(numSets);
+	private double[][] distanceSettingForBackward() {
+		double[][] distances = setCrossValidationDistance();
 		for (int i = 0; i < distances.length; i++) {
 			for (int j = i+1; j < distances.length; j++) {
 				if (distances[i][j] == Double.POSITIVE_INFINITY) continue;
@@ -319,11 +343,10 @@ public class kNN implements Classifier{
 		}
 		return distances;
 	}
-	private double[][] setCrossValidationDistance(int numSets) {
+	private double[][] setCrossValidationDistance() {
 		// calculate all distances to avoid recomputation
 		double[][] distances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
 		
-		// use 8 different sets for cross validation (set dist to infinity)
 		for (int setNum = 0; setNum < numSets; setNum++) {
 			int from = setNum*this.dataSet.numTrainExs/numSets;
 			int to = (setNum+1)*this.dataSet.numTrainExs/numSets;
@@ -343,8 +366,7 @@ public class kNN implements Classifier{
 	private void forwardsSelection() {
 		removeAllAttributes();
 		
-		int numSets=8;
-		double[][] distances = setCrossValidationDistance(numSets);
+		double[][] distances = setCrossValidationDistance();
 		int[][] orderedIndices = orderedIndices(distances);
 		
 		// calculate base error with no attribute elimination
@@ -393,7 +415,7 @@ public class kNN implements Classifier{
 		double[][] temporaryDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
 		for (int i = 0; i < distances.length; i++) {
 			for (int j = i+1; j < distances.length; j++) {
-				double distanceCalculation = strategy.calcPlusDistance(this.dataSet.trainEx[i][m], this.dataSet.trainEx[j][m]);
+				double distanceCalculation = strategy.distanceStrategy.calcPlusDistance(this.dataSet.trainEx[i][m], this.dataSet.trainEx[j][m]);
 				temporaryDistances[i][j] = distances[i][j] - distanceCalculation;
 				temporaryDistances[j][i] = temporaryDistances[i][j];
 			}
@@ -414,7 +436,7 @@ public class kNN implements Classifier{
 	private int findOptimalK(int kMin, int kMax) {
 		assert(kMax >= kMin);
 		
-		int[] kErrors = calcErrorByK(kMin, kMax);
+		int[] kErrors = this.strategy.getCrossValidationStrategy().calcErrorByK(this, kMin, kMax);
 		// set k to that of minimized error
 		double minError = Double.MAX_VALUE;
 		int kOpt = 0;
@@ -428,54 +450,6 @@ public class kNN implements Classifier{
 		return kOpt;
 	}
 
-	private int[] calcErrorByK(int kMin, int kMax) {
-		// use 8 different sets for cross validation
-		int numSets = 8;
-		int[] kErrors = new int[kMax - kMin + 1];
-		
-		for (int setNum = 0; setNum < numSets; setNum++) {
-			int from = setNum*this.dataSet.numTrainExs/numSets;
-			int to = (setNum+1)*this.dataSet.numTrainExs/numSets;
-			
-			// create new kNN using subset of data set
-			kNN knn = new kNN(this.dataSet, from, to, this.kOpt,
-					this.isEliminatedAttr, this.instanceWeights, this.strategy);
-			
-			// test on held-out training examples
-			for (int t = from; t < to; t++) {
-
-				// get k_max best examples
-				int[] kNNIndices = knn.kNearest(kMax, this.dataSet.trainEx[t]);
-
-				// count votes by value of k
-				double vote_0 = 0;
-				double vote_1 = 0;
-				for (int k = 0; k < kMax; k++) {
-					int neighborIndex = kNNIndices[k];
-
-					// track errors for appropriate k
-					if (k >= kMin) {
-						int predict = (vote_1 > vote_0)? 1 : 0;
-						if (predict != this.dataSet.trainLabel[t]) 
-							kErrors[k - kMin]++;
-					}
-
-					// continue to increment vote counts
-					if (this.dataSet.trainLabel[neighborIndex] == 1)
-						vote_1 += this.instanceWeights[neighborIndex];
-					else
-						vote_0 += this.instanceWeights[neighborIndex];
-				}
-				
-				int predict = (vote_1 > vote_0)? 1 : 0;
-				
-				if (predict != this.dataSet.trainLabel[t]) 
-					kErrors[kMax - kMin]++;
-			}
-		}
-		return kErrors;
-	}
-	
 	/** A class used to modularize comparisons for training
 	 * examples based on a specific reference example ex.
 	 * ex_index is used to avoid using the same training
@@ -536,7 +510,7 @@ public class kNN implements Classifier{
 	 * array a in which a[i] is the index of the ith
 	 * closest training example.
 	 */
-	private int[] kNearest(int k, int[] ex) {
+	public int[] kNearest(int k, int[] ex) {
 		// indices of k best examples
 		int[] kNNindices = new int[k];
 		
@@ -626,9 +600,10 @@ public class kNN implements Classifier{
 
 	DataSet d = new BinaryDataSet(filestem);
 
-	Classifier c = new kNN(d, new EuclideanDistanceStrategy());
+	Classifier c = new kNN(d, new Strategy(new EuclideanDistance(), new kFoldCrossValidation()));
 	
 
 	d.printTestPredictions(c, filestem);
     }
+
 }
