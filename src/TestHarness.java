@@ -66,13 +66,14 @@ public class TestHarness {
                     c = new DecisionForest(d, numTrees);
                     break;
                 case KNN:
-                    c = new kNN(d, k, numIters);
+                    c = new kNN(d, k, numIters, new Strategy(new EuclideanDistance(), new kFoldCrossValidation()));
                     break;
                 case SLNN:
                     c = new SingleLayerNeuralNet(d);
                     break;
                 case MLNN:
-                    c = new MultiLayerNeuralNet(d);
+                	Activation a = new Sigmoid();
+                    c = new MultiLayerNeuralNet(d, a);
                     break;
                 default:
                     c = new BaselineClassifier(d);
@@ -145,13 +146,14 @@ public class TestHarness {
                     c = new DecisionForest(d, numTrees);
                     break;
                 case KNN:
-                    c = new kNN(d);
+                    c = new kNN(d, new Strategy(new EuclideanDistance(), new kFoldCrossValidation()));
                     break;
                 case SLNN:
                     c = new SingleLayerNeuralNet(d);
                     break;
                 case MLNN:
-                    c = new MultiLayerNeuralNet(d);
+                	Activation a = new Sigmoid();
+                    c = new MultiLayerNeuralNet(d, a);
                     break;
                 default:
                     c = new BaselineClassifier(d);
