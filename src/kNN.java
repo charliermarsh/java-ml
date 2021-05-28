@@ -55,11 +55,14 @@ public class kNN implements Classifier{
 	public Strategy getStrategy() {
 		return strategy;
 	}
+
 	/** Constructor for the kNN machine learning algorithm.
 	 *  Takes as argument a data set. From then on, examples
 	 *  in the data set can be fed to predict() in return for
 	 *  classifications.
+	 * @return 
 	 */
+
 	public kNN(DataSet dataSet, Strategy strategy) {
 		/* Setup array labelledData so that it contains all the training
 		   data attributes along with that example's label. */
@@ -70,7 +73,8 @@ public class kNN implements Classifier{
 		this.kOpt = findOptimalK(this.kMin, this.kMax);
 		
 		initInstanceWeights();
-		backwardsElimination();
+		backwardsElimination backwards = new backwardsElimination(dataSet, strategy, isEliminatedAttr, instanceWeights);
+		backwards.backwardsElimination();
 		traininstanceWeights(1);		
 	}
 	/** Constructor for the kNN machine learning algorithm.
@@ -112,7 +116,7 @@ public class kNN implements Classifier{
 		this.kOpt = kOpt;
 		this.isEliminatedAttr = isEliminatedAttr;
 		this.instanceWeights = instanceWeights;	
-	}
+		}
 
 	private void initInstanceWeights() {
 		for (int i = 0; i < this.instanceWeights.length; i++)
@@ -244,190 +248,6 @@ public class kNN implements Classifier{
 	 * distances, employs a linear-time distance update that just alters
 	 * pre-computed distances based on attribute in question.
 	 */
-	private void backwardsElimination() {
-
-		
-		double[][] distances = distanceSettingForBackward();
-		
-		int[][] orderedIndices = orderedIndices(distances);
-		
-		// calculate base error with no attribute elimination
-		double baselineError = calcError(orderedIndices);
-		
-		distances = iterateEachAttribute(distances, orderedIndices, baselineError);
-	}
-	private double[][] iterateEachAttribute(double[][] distances, int[][] orderedIndices, double baselineError) {
-		int sum = 0;
-		double[][] newdistance = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-		int[][] orderedIndice = orderedIndices;
-		double baselineerror = baselineError;
-		// iterate over each attribute
-		for (int m = 0; m < this.dataSet.numAttrs; m++) {
-			double[][] temporaryDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-			temporaryDistances = linearDistanceUpdate(distances, m);
-			orderedIndice = computeNewNearestK(orderedIndice, temporaryDistances);
-			double adjustedError = calcError(orderedIndice);
-
-			// if error improved, keep attribute eliminated; else, retain
-			boolean errorImproved = adjustedError < baselineerror;
-			if ( errorImproved ) {
-				this.isEliminatedAttr[m] = true;
-				baselineerror = adjustedError;
-				newdistance = temporaryDistances;
-				sum++;
-			}
-			//if(m == this.d.numAttrs - 1)
-			//	System.out.printf("%d attributes removed.\n", sum);
-		}
-		return newdistance;
-	}
-	private int[][] computeNewNearestK(int[][] orderedIndice, double[][] temporaryDistances) {
-		// compute new k nearest
-		int[][] orderedIndices = new int[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-		for (int i = 0; i < this.dataSet.numTrainExs; i++) {
-			// annoying Integer to int casting issues
-			Integer[] integers = new Integer[this.dataSet.numTrainExs];
-			for (int j = 0; j < orderedIndice.length; j++) {
-				integers[j] = orderedIndice[i][j];
-			}
-			exComparator comparator = new exComparator(temporaryDistances[i], i);
-			comparator.descending = true;
-			Arrays.sort(integers, comparator);
-			for (int j = 0; j < orderedIndice.length; j++) {
-				orderedIndices[i][j] = integers[j];
-			}
-		}
-		return orderedIndices;
-	}
-
-	private double[][] linearDistanceUpdate(double[][] distances, int m) {
-		// linear-time distance update
-		double[][] temporaryDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-		for (int i = 0; i < distances.length; i++) {
-			for (int j = i+1; j < distances.length; j++) {
-				double distanceCalculation = strategy.getDistanceStrategy().calcDistance(this.dataSet.trainEx[i][m], this.dataSet.trainEx[j][m]);
-				temporaryDistances[i][j] = distances[i][j] - distanceCalculation;
-				temporaryDistances[j][i] = temporaryDistances[i][j];
-			}
-		}
-		return temporaryDistances;
-	}
-
-	private int[][] orderedIndices(double[][] distances) {
-		// orderedIndices[i][j] is index of jth closest example to i
-		int[][] orderedIndices = new int[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-		for (int i = 0; i < orderedIndices.length; i++) {
-			// annoying Integer to int casting issues
-			Integer[] alpha = new Integer[this.dataSet.numTrainExs];
-			for (int j = 0; j < orderedIndices.length; j++) {
-				alpha[j] = j;
-			}
-			exComparator comparator = new exComparator(distances[i], i);
-			comparator.descending = true;
-			Arrays.sort(alpha, comparator);
-			for (int j = 0; j < orderedIndices.length; j++) {
-				orderedIndices[i][j] = alpha[j];
-			}
-		}
-		return orderedIndices;
-	}
-	private double[][] distanceSettingForBackward() {
-		double[][] distances = setCrossValidationDistance();
-		for (int i = 0; i < distances.length; i++) {
-			for (int j = i+1; j < distances.length; j++) {
-				if (distances[i][j] == Double.POSITIVE_INFINITY) continue;
-				
-				distances[i][j] = getDistance(this.dataSet.trainEx[i], this.dataSet.trainEx[j]);
-				distances[j][i] = distances[i][j];
-			}
-		}
-		return distances;
-	}
-	private double[][] setCrossValidationDistance() {
-		// calculate all distances to avoid recomputation
-		double[][] distances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-		
-		for (int setNum = 0; setNum < numSets; setNum++) {
-			int from = setNum*this.dataSet.numTrainExs/numSets;
-			int to = (setNum+1)*this.dataSet.numTrainExs/numSets;
-
-			for (int t = from; t < to; t++) {
-				for (int s = t+1; s < to; s++) {
-					distances[t][s] = Double.POSITIVE_INFINITY;
-					distances[s][t] = distances[t][s];
-				}
-			}
-		}
-		return distances;
-	}
-	/** Uses forward selection to add attributes to a distance function,
-	 * greedily adding the attribute that minimizes error.
-	 */
-	private void forwardsSelection() {
-		removeAllAttributes();
-		
-		double[][] distances = setCrossValidationDistance();
-		int[][] orderedIndices = orderedIndices(distances);
-		
-		// calculate base error with no attribute elimination
-		double baselineError = calcError(orderedIndices);
-		boolean attributeAdded;
-		
-		do {
-			attributeAdded = false;
-			double minError = Double.POSITIVE_INFINITY;
-			int minErrorIndex = -1;
-			double[][] minErrorDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-			
-			// iterate over each attribute
-			for (int m = 0; m < this.dataSet.numAttrs; m++) {
-				boolean mthEliminateAttributNotEmpty = !this.isEliminatedAttr[m];
-				if (mthEliminateAttributNotEmpty) continue;
-				
-				double[][] newDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-				newDistances = linearForwardDistanceUpdate(distances, m);
-				
-				computeNewNearestK(orderedIndices, newDistances);
-
-				double adjustedError = calcError(orderedIndices);
-
-				// if error improved, keep attribute eliminated; else, retain
-				boolean errorImproved = ( adjustedError < minError );
-				if ( errorImproved ) {
-					minError = adjustedError;
-					minErrorIndex = m;
-					minErrorDistances = newDistances;
-				}
-			}
-			
-			boolean baselineErrorImproved = (minError < baselineError);
-			
-			if ( baselineErrorImproved ) {
-				this.isEliminatedAttr[minErrorIndex] = false;
-				distances = minErrorDistances;
-				attributeAdded = true;
-				//System.out.println("Added attribute " + minErrorIndex);
-			}
-		} while (attributeAdded);
-	}
-	private double[][] linearForwardDistanceUpdate(double[][] distances, int m) {
-		// linear-time distance update
-		double[][] temporaryDistances = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
-		for (int i = 0; i < distances.length; i++) {
-			for (int j = i+1; j < distances.length; j++) {
-				double distanceCalculation = strategy.distanceStrategy.calcPlusDistance(this.dataSet.trainEx[i][m], this.dataSet.trainEx[j][m]);
-				temporaryDistances[i][j] = distances[i][j] - distanceCalculation;
-				temporaryDistances[j][i] = temporaryDistances[i][j];
-			}
-		}
-		
-		return temporaryDistances;
-	}
-	private void removeAllAttributes() {
-		// remove all attributes
-		for (int i = 0; i < this.isEliminatedAttr.length; i++)
-			this.isEliminatedAttr[i] = true;
-	}
 	
 	/** Uses a cross-validation technique to find the optimal value of
 	 * k for the kNN algorithm on data set d. Returns an integer k 
@@ -455,17 +275,16 @@ public class kNN implements Classifier{
 	 * ex_index is used to avoid using the same training
 	 * example as the reference example.
 	 */
-	private class exComparator implements Comparator {
+	public class exComparator implements Comparator {
 		public boolean descending;
 		private double[] dists;
 	    private int[] ex;
 	    private int exIndex = -1;
 	    public boolean isDescending = false;
 	    
-	    private exComparator(int[] ex) {
+	    exComparator(int[] ex) {
 	      this.ex = ex;
 	    }
-	    
 	    /* Constructor which assumes base ex may be used in comparison */
 	    private exComparator(int[] ex, int exIndex) {
 		  this.ex = ex;
@@ -473,7 +292,7 @@ public class kNN implements Classifier{
 		}
 	    
 	    /* Constructor which allows for precomputed distances */
-	    private exComparator(double[] dists, int exIndex) {
+	    exComparator(double[] dists, int exIndex) {
 			this.dists = dists;
 			this.exIndex = exIndex;
 		}
@@ -499,12 +318,12 @@ public class kNN implements Classifier{
 	    	}
 	    	int result = 0;
 	    	if (dist1 > dist2) result = -1;
-    		if (dist2 > dist1) result = 1;
-    		if (this.isDescending) result *= -1;
-    		return result;
+			if (dist2 > dist1) result = 1;
+			if (this.isDescending) result *= -1;
+			return result;
 	    }
 	}
-
+	
 	/** Calculates the indices of the k nearest training
 	 * examples in data set d to example ex. Returns an
 	 * array a in which a[i] is the index of the ith
