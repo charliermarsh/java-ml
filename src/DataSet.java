@@ -69,10 +69,10 @@ public class DataSet {
 	 * <tt>filestem.train</tt> and <tt>filestem.test</tt>, and then sets up all of
 	 * the public fields. See assignment instructions for information on the
 	 * required format of these files.
+	 * @throws Exception 
 	 **/
-	public DataSet(String filestem) throws FileNotFoundException, IOException {
-		FileInput fileInput = new FileInput();
-		fileInput.read(this, filestem);
+	public DataSet(DataSetInput input) throws Exception {
+		input.readTo(this);
 	}
 
 	/**
@@ -134,8 +134,12 @@ public class DataSet {
 		}
 	}
 
-	protected boolean isNumericAttribute(int attributeNum) {
-		return FileInput.isNumericAttribute(this, attributeNum);
+	public void setAttributeNumeric(int attributeNum) {
+		attrVals[attributeNum] = null;
+	}
+
+	public boolean isNumericAttribute(int attributeNum) {
+		return attrVals[attributeNum] == null;
 	}
 
 }

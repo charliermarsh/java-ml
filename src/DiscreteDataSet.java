@@ -1,4 +1,4 @@
-import java.io.*;
+
 
 /**
  * This is a subclass of <tt>DataSet</tt> representing a dataset all
@@ -13,10 +13,11 @@ public class DiscreteDataSet extends DataSet {
      * <tt>filestem.names</tt>, <tt>filestem.train</tt> and
      * <tt>filestem.test</tt>, converts all attributes to discrete
      * format, and sets up all of the public fields.
+     * @throws Exception 
      **/
-    public  DiscreteDataSet(String filestem)
-	throws FileNotFoundException, IOException {
-	super(filestem);
+    public  DiscreteDataSet(DataSetInput input)
+	throws Exception {
+	super(input);
 
 	int[][] cont_vals = getContinuousValues();
 

@@ -12,9 +12,10 @@ public class NumericDataSet extends DataSet {
 	 * This constructor reads in data from the files <tt>filestem.names</tt>,
 	 * <tt>filestem.train</tt> and <tt>filestem.test</tt>, converts all attributes
 	 * to numeric * format, and sets up all of the public fields.
+	 * @throws Exception 
 	 **/
-	public NumericDataSet(String filestem) throws FileNotFoundException, IOException {
-		super(filestem);
+	public NumericDataSet(DataSetInput input) throws Exception {
+		super(input);
 
 		int new_numAttrs = 0;
 

@@ -1,15 +1,15 @@
-import java.io.FileNotFoundException;
-import java.io.IOException;
 
 public class TestForestSize {
-	public static void main(String[] argv) throws FileNotFoundException, IOException {
+	public static void main(String[] argv) throws Exception {
 		if (argv.length < 4) {
             System.err.println("argument: filestem forestMin forestMax increment numTrials");
             return;
         }
 		
 		// data set from filestem
-		DataSet d = new DiscreteDataSet(argv[0]);
+        String fileStem = argv[0];
+    	DataSetInput input = new FileInput(fileStem);
+		DataSet d = new DiscreteDataSet(input);
 		// min and max sizes for decision forest
 		int forestMin = Integer.parseInt(argv[1]);
 		int forestMax = Integer.parseInt(argv[2]);
@@ -21,7 +21,7 @@ public class TestForestSize {
 		System.out.println("[forest size], [trialNum], [training error], [cross-set error]");
 		for (int forestSize = forestMin; forestSize <= forestMax; forestSize += increment) {
 			// data set from filestem
-			d = new DiscreteDataSet(argv[0]);
+			d = new DiscreteDataSet(input);
 			double[][] error = TestHarness.computeError(d, numTrials, TestHarness.classifier.DF, forestSize, false, 0, 0);
 			for (int j = 0; j < numTrials; j++) {
 				System.out.printf("%d, %d, %f, %f\n", forestSize, j, error[j][0], error[j][1]);
