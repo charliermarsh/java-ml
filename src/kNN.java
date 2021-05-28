@@ -24,6 +24,7 @@ public class kNN implements Classifier{
 	// use 8 different sets for cross validation
 	private int numSets = 8;
 	private Strategy strategy;
+	private StepwiseVariableSelection strate;
 	
 	public DataSet getDataSet() {
 		return dataSet;

@@ -2,14 +2,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class forwardsSelection extends StepwiseVariableSelection {
-	public forwardsSelection(DataSet dataSet, Strategy strategy, boolean[] isEliminatedAttr,
-			double[] instanceWeights) {
-		this.dataSet = dataSet;
-		this.strategy = strategy;
-		this.isEliminatedAttr = isEliminatedAttr;
-		this.instanceWeights = instanceWeights;
-	}
-
+	
 	public void forwardsSelection() {
 		removeAllAttributes();
 		
@@ -57,7 +50,13 @@ public class forwardsSelection extends StepwiseVariableSelection {
 			}
 		} while (attributeAdded);
 	}
-	
+	public forwardsSelection(DataSet dataSet, Strategy strategy, boolean[] isEliminatedAttr,
+			double[] instanceWeights) {
+		this.dataSet = dataSet;
+		this.strategy = strategy;
+		this.isEliminatedAttr = isEliminatedAttr;
+		this.instanceWeights = instanceWeights;
+	}
 	protected int[][] computeNewNearestK(int[][] orderedIndice, double[][] temporaryDistances) {
 		// compute new k nearest
 		int[][] orderedIndices = new int[this.dataSet.numTrainExs][this.dataSet.numTrainExs];

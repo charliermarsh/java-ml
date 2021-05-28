@@ -2,13 +2,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 public class backwardsElimination extends StepwiseVariableSelection {
-	public backwardsElimination(DataSet dataSet, Strategy strategy, boolean[] isEliminatedAttr,
-			double[] instanceWeights) {
-		this.dataSet = dataSet;
-		this.strategy = strategy;
-		this.isEliminatedAttr = isEliminatedAttr;
-		this.instanceWeights = instanceWeights;
-	}
+
 	public void backwardsElimination() {
 		
 		double[][] distances = distanceSettingForBackward();
@@ -20,7 +14,13 @@ public class backwardsElimination extends StepwiseVariableSelection {
 		
 		distances = iterateEachAttribute(distances, orderedIndices, baselineError);
 	}
-	
+	public backwardsElimination(DataSet dataSet, Strategy strategy, boolean[] isEliminatedAttr,
+			double[] instanceWeights) {
+		this.dataSet = dataSet;
+		this.strategy = strategy;
+		this.isEliminatedAttr = isEliminatedAttr;
+		this.instanceWeights = instanceWeights;
+	}
 	protected double[][] iterateEachAttribute(double[][] distances, int[][] orderedIndices, double baselineError) {
 		int sum = 0;
 		double[][] newdistance = new double[this.dataSet.numTrainExs][this.dataSet.numTrainExs];
