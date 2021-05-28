@@ -1,4 +1,3 @@
-
 public class Strategy {
 	public Distance distanceStrategy;
 	public Distance getDistanceStrategy() {

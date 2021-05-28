@@ -14,9 +14,10 @@ public class BinaryDataSet extends NumericDataSet {
 	 * This constructor reads in data from the files <tt>filestem.names</tt>,
 	 * <tt>filestem.train</tt> and <tt>filestem.test</tt>, converts all attributes
 	 * to binary format, and sets up all of the public fields.
+	 * @throws Exception 
 	 **/
-	public BinaryDataSet(String filestem) throws FileNotFoundException, IOException {
-		super(filestem);
+	public BinaryDataSet(DataSetInput input) throws Exception {
+		super(input);
 
 		int new_numAttrs = 0;
 

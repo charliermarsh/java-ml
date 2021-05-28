@@ -1,4 +1,3 @@
-import java.io.*;
 
 /**
  * This is the class for an extremely simple learning algorithm that
@@ -46,9 +45,10 @@ public class BaselineClassifier implements Classifier {
     /** A simple main for testing this algorithm.  This main reads a
      * filestem from the command line, runs the learning algorithm on
      * this dataset, and prints the test predictions to filestem.testout.
+     * @throws Exception 
      */
     public static void main(String argv[])
-	throws FileNotFoundException, IOException {
+	throws Exception {
 
 	if (argv.length < 1) {
 	    System.err.println("argument: filestem");
@@ -57,7 +57,8 @@ public class BaselineClassifier implements Classifier {
 
 	String filestem = argv[0];
 
-	DataSet d = new DataSet(filestem);
+	DataSetInput input = new FileInput(filestem);
+	DataSet d = new DataSet(input);
 
 	Classifier c = new BaselineClassifier(d);
 

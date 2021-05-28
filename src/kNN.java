@@ -1,12 +1,10 @@
-import java.io.FileNotFoundException;
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.PriorityQueue;
-import java.util.Random;
 
-public class kNN implements Classifier {
-	
+public class kNN implements Classifier{
+
 	// data set of training examples
 	private DataSet dataSet;
 	// minimum possible value of k
@@ -256,9 +254,7 @@ public class kNN implements Classifier {
 	 */
 	private int findOptimalK(int kMin, int kMax) {
 		assert(kMax >= kMin);
-
 		int[] kErrors = this.strategy.getCrossValidationStrategy().calcErrorByK(this, kMin, kMax);
-
 		// set k to that of minimized error
 		double minError = Double.MAX_VALUE;
 		int kOpt = 0;
@@ -271,6 +267,7 @@ public class kNN implements Classifier {
 		//System.out.printf("Optimal k chosen at k = %d\n", minK);
 		return kOpt;
 	}
+
 	/** A class used to modularize comparisons for training
 	 * examples based on a specific reference example ex.
 	 * ex_index is used to avoid using the same training
@@ -408,9 +405,10 @@ public class kNN implements Classifier {
     /** A simple main for testing this algorithm.  This main reads a
      * filestem from the command line, runs the learning algorithm on
      * this dataset, and prints the test predictions to filestem.testout.
+     * @throws Exception 
      */
     public static void main(String argv[])
-	throws FileNotFoundException, IOException {
+	throws Exception {
 	if (argv.length < 1) {
 	    System.err.println("argument: filestem");
 	    return;
@@ -418,7 +416,8 @@ public class kNN implements Classifier {
 
 	String filestem = argv[0];
 
-	DataSet d = new BinaryDataSet(filestem);
+	DataSetInput input = new FileInput(filestem);
+	DataSet d = new BinaryDataSet(input);
 
 	Classifier c = new kNN(d, new Strategy(new EuclideanDistance(), new kFoldCrossValidation()));
 	

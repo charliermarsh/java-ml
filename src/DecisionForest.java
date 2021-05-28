@@ -52,7 +52,7 @@ public class DecisionForest extends TemplateMethod{
      *
      */
     public static void main(String argv[])
-        throws FileNotFoundException, IOException {
+        throws Exception {
 
         if (argv.length < 2) {
             System.err.println("argument: filestem forestSize");
@@ -65,7 +65,8 @@ public class DecisionForest extends TemplateMethod{
          * Create a cross validation set - just takes the last crossSize
          * elements of the set as a cross set.
          */
-        DiscreteDataSet d = new DiscreteDataSet(filestem);
+    	DataSetInput input = new FileInput(filestem);
+        DiscreteDataSet d = new DiscreteDataSet(input);
 
         System.out.println("Training classifier on " + d.numTrainExs
                 + " examples");
@@ -75,7 +76,4 @@ public class DecisionForest extends TemplateMethod{
         System.out.println("Running on test set...");
         d.printTestPredictions(c, filestem);
     }
-
-
-
 }
