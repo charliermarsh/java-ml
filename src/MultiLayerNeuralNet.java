@@ -11,11 +11,13 @@ public class MultiLayerNeuralNet implements Classifier {
 	/* layer[i] is a list of nodes in layer i. */
 	private final Layer[] layer;
 	/* data set on which to make predictions. */
-	private final DataSet d;
+	private final DataSet dataset;
 	/* number of attributes in data set. */
 	private final int N;
 	/* number of nodes in the network. */
 	private final int numNodes;
+	/* activation function */
+	private final Activation activation;
 	
 	/** Calculates the error on the training examples of
 	 * data set d. */
@@ -25,21 +27,6 @@ public class MultiLayerNeuralNet implements Classifier {
 		for (int i = 0; i < d.numTrainExs; i++)
 			sum += Math.abs(d.trainLabel[i] - predict(d.trainEx[i]));
 		return sum/d.numTrainExs;
-	}
-	
-	/** Runs an activation threshold function g on some
-	 * input value d.
-	 */
-	private double sigmoid(double d) {
-		return 1.0/(1.0 + Math.exp(-d));
-	}
-	
-	/** Runs an activation threshold function g's derivative 
-	 * on some input value d.
-	 */
-	private double sigmoidPrime(double d) {
-		double g = sigmoid(d);
-		return g * (1.0 - g);
 	}
 	
 	/**
@@ -90,10 +77,10 @@ public class MultiLayerNeuralNet implements Classifier {
 
 	private int getIdx(int layerNum, int nodeNum) {
 		int idx = 0;
-		for(int l=1; l<layerNum; l++) {
-			idx += this.layer[layerNum-1].getNumNodes();
+		for(int l=1; l<=layerNum; l++) {
+			idx += this.layer[l-1].getNumNodes();
 		}
-		idx = nodeNum;
+		idx += nodeNum;
 		
 		return idx;
 	}
@@ -114,7 +101,7 @@ public class MultiLayerNeuralNet implements Classifier {
 	 */
 	private void backwardPass(int label, double[] prevDelta, double[] output, double[] delta) {
 		delta[this.numNodes - 1] = 
-				sigmoidPrime(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
+				this.activation.getDerivation(output[this.numNodes - 1])*(label - (int)Math.round(output[this.numNodes - 1])); 
 		for (int l = this.layer.length - 2; l >= 0; l--) {
 			for (int src =0 ; src < this.layer[l].getNumNodes(); src++) {
 				double sum = 0;
@@ -122,7 +109,7 @@ public class MultiLayerNeuralNet implements Classifier {
 					sum += this.layer[l].getWeight(src, dest)*delta[ getIdx(l+1,dest) ];
 				}
 				// compute delta and add momentum factor
-				delta[getIdx(l,src)] = sigmoidPrime(output[ getIdx(l,src) ])*sum;
+				delta[getIdx(l,src)] = this.activation.getDerivation(output[ getIdx(l,src) ])*sum;
 				delta[getIdx(l,src)] += this.momentumFactor*prevDelta[getIdx(l,src)];
 				// store momentum for future use
 				prevDelta[getIdx(l,src)] = delta[getIdx(l,src)];
@@ -140,7 +127,7 @@ public class MultiLayerNeuralNet implements Classifier {
 				}
 				// subtract threshold value
 				input[ getIdx(l,dest) ] -= this.layer[l-1].getWeight(dest,dest);
-				output[ getIdx(l,dest) ] = sigmoid(input[ getIdx(l,dest) ]);
+				output[ getIdx(l,dest) ] = this.activation.getActivation(input[ getIdx(l,dest) ]);
 			}
 		}
 	}
@@ -150,25 +137,30 @@ public class MultiLayerNeuralNet implements Classifier {
 	 * from a data set.
 	 */
 	@SuppressWarnings("unchecked")
-	public MultiLayerNeuralNet(DataSet d) {		
-		this.d = d;
-		this.N = this.d.numAttrs;
+	public MultiLayerNeuralNet(DataSet d, Activation a) {		
+		this.dataset = d;
+		this.N = this.dataset.numAttrs;
+		this.activation = a;
 		// number of nodes in hidden layer
 		int numHidden = this.N;
 		int numInput = this.N;
 		int numOutput = 1;
-		this.numNodes = this.N + numHidden + 1;
+		this.numNodes = numInput + numHidden + numOutput;
 		// number of layers to be included
 		int numLayers = 3;
 		this.layer = new Layer[numLayers];		
+		createLayers(numHidden, numInput, numOutput);
+
+		train();
+	}
+
+	private void createLayers(int numHidden, int numInput, int numOutput) {
 		Layer inputLayer = new Layer(numInput, 0, numHidden);
 		Layer hiddenLayer = new Layer(numHidden, numInput, numOutput);
 		Layer outputLayer = new Layer(numOutput, numHidden, 0);
 		this.layer[0] = inputLayer;
 		this.layer[1] = hiddenLayer;
 		this.layer[2] = outputLayer;
-
-		train();
 	}
 
 	/** train neural net on each training example
@@ -179,11 +171,11 @@ public class MultiLayerNeuralNet implements Classifier {
 		double minError = Double.MAX_VALUE;
 		double lastError = Double.MAX_VALUE;
 		double[] prevDelta = new double[this.numNodes];
-		int maxRuns = 1;
+		int maxRuns = 10;
 		for (int runs = 0; runs < maxRuns; runs++) {
 			// run back prop
-			backPropagation(this.d, prevDelta);
-			double error = error(this.d);
+			backPropagation(this.dataset, prevDelta);
+			double error = error(this.dataset);
 			// if error is sufficiently low, cut-off
 			if (error < epsilon) {
 				for(int l=0; l<this.layer.length; l++)
@@ -217,25 +209,25 @@ public class MultiLayerNeuralNet implements Classifier {
      * prediction, i.e., 0 or 1.
      */
     public int predict(int[] ex) {
-    	double[] a = new double[this.numNodes];
-		double[] in = new double[this.numNodes];
+    	double[] output = new double[this.numNodes];
+		double[] input = new double[this.numNodes];
 		
 		// First N nodes are input nodes
 		for (int i = 0; i < this.N; i++)
-			a[i] = ex[i];
+			output[i] = ex[i];
 		
     	// Compute outputs by propagating inputs forward
     	for (int l = 1; l < this.layer.length; l++) {
     		for (int dest = 0; dest < this.layer[l].getNumNodes(); dest++) {
     			for (int src : this.layer[l].getIncomingEdges(dest)) {
-    				in[dest] += this.layer[l-1].getWeight(src,dest)*a[src];
+    				input[getIdx(l,dest)] += this.layer[l-1].getWeight(src,dest)*output[getIdx(l-1,src)];
     			}
-    			a[dest] = sigmoid(in[dest]);
+    			output[getIdx(l,dest)] = this.activation.getActivation(input[getIdx(l,dest)]);
    			}
     	}
     	    	
     	// Return based on output of sigmoid function
-    	return predict(a[this.numNodes - 1]);
+    	return predict(output[this.numNodes - 1]);
     }
     
     /** Makes a prediction based on some input value a, which
@@ -277,8 +269,10 @@ public class MultiLayerNeuralNet implements Classifier {
     	String filestem = argv[0];
 
     	DataSet d = new BinaryDataSet(filestem);
-
-    	Classifier c = new MultiLayerNeuralNet(d);
+    	
+    	Activation a = new Sigmoid();
+    	
+    	Classifier c = new MultiLayerNeuralNet(d, a);
 
     	d.printTestPredictions(c, filestem);
     }
