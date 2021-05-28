@@ -1,4 +1,3 @@
-
 public class EuclideanDistance implements Distance{
 	@Override
 	public double calcDistance(int pos1, int pos2) {

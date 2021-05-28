@@ -612,7 +612,4 @@ public class kNN implements Classifier{
 	d.printTestPredictions(c, filestem);
     }
 
-
-
-
 }
