@@ -5,7 +5,6 @@
  *
  * http://csmr.ca.sandia.gov/~wpk/pubs/publications/pami06.pdf
  */
-import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 public class DecisionForest extends TemplateMethod{
@@ -52,7 +51,7 @@ public class DecisionForest extends TemplateMethod{
      *
      */
     public static void main(String argv[])
-        throws FileNotFoundException, IOException {
+        throws Exception {
 
         if (argv.length < 2) {
             System.err.println("argument: filestem forestSize");
@@ -65,7 +64,8 @@ public class DecisionForest extends TemplateMethod{
          * Create a cross validation set - just takes the last crossSize
          * elements of the set as a cross set.
          */
-        DiscreteDataSet d = new DiscreteDataSet(filestem);
+    	DataSetInput input = new FileInput(filestem);
+        DiscreteDataSet d = new DiscreteDataSet(input);
 
         System.out.println("Training classifier on " + d.numTrainExs
                 + " examples");

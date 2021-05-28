@@ -2,7 +2,6 @@
  * A basic test harness for the different algorithms
  */
 import java.util.*;
-import java.io.*;
 public class TestHarness {
 
     private static int FOLDNUM = 1;
@@ -189,7 +188,7 @@ public class TestHarness {
      * Simple main for testing.
      */
     public static void main(String argv[])
-        throws FileNotFoundException, IOException {
+        throws Exception {
 
         if (argv.length < 3) {
             System.err.println("argument: filestem classifier #runs classifierArgs");
@@ -198,32 +197,33 @@ public class TestHarness {
         }
 
         DataSet d;
+        String fileStem = argv[0];
+    	DataSetInput input = new FileInput(fileStem);
         if (argv[1].equals("dt")) {
             System.out.print("Using decision tree");
             algo = classifier.DT;
-            d = new DiscreteDataSet(argv[0]);
+            d = new DiscreteDataSet(input);
         } else if (argv[1].equals("df")) {
             System.out.print("Using decision forest");
             if (argv.length == 4) { numTrees = Integer.parseInt(argv[3]); }
             algo = classifier.DF;
-            //d = new DiscreteDataSet(argv[0]);
-            d = new DiscreteDataSet(argv[0]);
+            d = new DiscreteDataSet(input);
         } else if (argv[1].equals("knn")) {
             System.out.print("Using k-nearest-neighbor");
             algo = classifier.KNN;
-            d = new BinaryDataSet(argv[0]);
+            d = new BinaryDataSet(input);
         } else if (argv[1].equals("slnn")) {
             System.out.print("Using single layer neural net");
             algo = classifier.SLNN;
-            d = new BinaryDataSet(argv[0]);
+            d = new BinaryDataSet(input);
         } else if (argv[1].equals("mlnn")) {
             System.out.print("Using multilayer neural net");
             algo = classifier.MLNN;
-            d = new BinaryDataSet(argv[0]);
+            d = new BinaryDataSet(input);
         } else {
             System.out.print("Using baseline classifier");
             algo = classifier.BASE;
-            d = new DataSet(argv[0]);
+            d = new DataSet(input);
         }
         System.out.println(" on " + argv[0]);
 
