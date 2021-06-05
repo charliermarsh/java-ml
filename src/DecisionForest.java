@@ -5,10 +5,11 @@
  *
  * http://csmr.ca.sandia.gov/~wpk/pubs/publications/pami06.pdf
  */
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 public class DecisionForest extends TemplateMethod{
-
+  
 	@Override
     protected void makeTree(DataSet data, HashSet<Integer> treeAttributes, ArrayList<Integer> treeExamples, int cTree) {
     	forest[cTree] = new DecisionTree(data, treeAttributes, treeExamples, true);
@@ -75,7 +76,4 @@ public class DecisionForest extends TemplateMethod{
         System.out.println("Running on test set...");
         d.printTestPredictions(c, filestem);
     }
-
-
-
 }
