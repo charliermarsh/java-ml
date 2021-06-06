@@ -55,6 +55,10 @@ public class kNN implements Classifier {
 	public Strategy getStrategy() {
 		return strategy;
 	}
+	
+	public void setIsEliminatedAttr(boolean[] isEliminatedAttr) {
+		this.isEliminatedAttr = isEliminatedAttr;
+	}
 
 	/**
 	 * Constructor for the kNN machine learning algorithm. Takes as argument a data
