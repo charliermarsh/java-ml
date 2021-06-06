@@ -1,10 +1,23 @@
 import static org.junit.Assert.assertEquals;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Method;
-
 public class kNNTest {
+	
+	private kNN knn;
+	private DataSetInput input;
+	private DataSet dataset;
+	private Strategy strategy;
+	
+	@Before
+	public void setUp() throws Exception {
+		input = new FileInput("./data/knn_test_dna");
+		dataset = new BinaryDataSet(input);
+		strategy = new Strategy(new EuclideanDistance(), new kFoldCrossValidation());
+		knn =  new kNN(dataset, strategy);
+	}
 	/*
 	 * Purpose: Test knn class member variable initialization in knn constructor
 	 * Input: kNN Create kNN object 
@@ -14,11 +27,6 @@ public class kNNTest {
 	 */
 	@Test
 	public void testkNN() throws Exception {
-		DataSetInput input = new FileInput("./data/knn_test_dna");
-		DataSet dataset = new BinaryDataSet(input);
-		Strategy strategy = new Strategy(new EuclideanDistance(), new kFoldCrossValidation());
-		kNN knn = new kNN(dataset, strategy);
-
 		assertEquals(dataset, knn.getDataSet());
 		assertEquals(strategy, knn.getStrategy());
 	}
@@ -31,10 +39,6 @@ public class kNNTest {
 	 */
 	@Test
 	public void testGetDistance() throws Exception {
-		DataSetInput input = new FileInput("./data/knn_test_dna");
-		DataSet dataset = new BinaryDataSet(input);
-		Strategy strategy = new Strategy(new EuclideanDistance(), new kFoldCrossValidation());
-		kNN knn = new kNN(dataset, strategy);
 
 		Method method = knn.getClass().getDeclaredMethod("getDistance", int[].class, int[].class);
 		method.setAccessible(true);
@@ -57,11 +61,7 @@ public class kNNTest {
 	 */
 	@Test
 	public void testCalcError() throws Exception {
-		DataSetInput input = new FileInput("./data/knn_test_dna");
-		DataSet dataset = new BinaryDataSet(input);
-		Strategy strategy = new Strategy(new EuclideanDistance(), new kFoldCrossValidation());
-		kNN knn = new kNN(dataset, strategy);
-		
+
 		Method method = knn.getClass().getDeclaredMethod("calcError", int[][].class);
 		method.setAccessible(true);
 		
@@ -71,9 +71,9 @@ public class kNNTest {
 		
 		knn.setInstanceWeights(instanceWeights);
 		
-		int[][] kNNindices = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9} };
+		int[][] kNNindices = { {2}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9} };
 		double error = (double) method.invoke(knn, (Object)kNNindices);
-		assertEquals(error, 0, 0.00001);
+		assertEquals(error, 1, 0.00001);
 	}
 	
 	/*
@@ -84,11 +84,7 @@ public class kNNTest {
 	 */
 	@Test
 	public void testkNearest() throws Exception {
-		DataSetInput input = new FileInput("./data/knn_test_dna");
-		DataSet dataset = new BinaryDataSet(input);
-		Strategy strategy = new Strategy(new EuclideanDistance(), new kFoldCrossValidation());
-		kNN knn = new kNN(dataset, strategy);
-		
+
 		Method method = knn.getClass().getDeclaredMethod("kNearest", int.class, int[].class);
 		method.setAccessible(true);
 		
@@ -110,11 +106,7 @@ public class kNNTest {
 	 */
 	@Test
 	public void testVoteCount() throws Exception {
-		DataSetInput input = new FileInput("./data/knn_test_dna");
-		DataSet dataset = new BinaryDataSet(input);
-		Strategy strategy = new Strategy(new EuclideanDistance(), new kFoldCrossValidation());
-		kNN knn = new kNN(dataset, strategy);
-		
+
 		Method method = knn.getClass().getDeclaredMethod("voteCount", int[].class);
 		method.setAccessible(true);
 		
