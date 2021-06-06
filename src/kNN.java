@@ -55,11 +55,14 @@ public class kNN implements Classifier {
 	public Strategy getStrategy() {
 		return strategy;
 	}
-	
+
 	public void setIsEliminatedAttr(boolean[] isEliminatedAttr) {
 		this.isEliminatedAttr = isEliminatedAttr;
 	}
 
+	public void setInstanceWeights(double[] instanceWeights) {
+		this.instanceWeights = instanceWeights;
+	}
 	/**
 	 * Constructor for the kNN machine learning algorithm. Takes as argument a data
 	 * set. From then on, examples in the data set can be fed to predict() in return
@@ -200,7 +203,9 @@ public class kNN implements Classifier {
 	 * closest example to i. Returns a double that represents the percent error.
 	 */
 	private double calcError(int[][] kNNindices) {
+		
 		double error = 0.0;
+		
 		for (int i = 0; i < this.dataSet.numTrainExs; i++) {
 			boolean isWrongPredict = voteCount(kNNindices[i]) != this.dataSet.trainLabel[i];
 			if (isWrongPredict)
@@ -373,8 +378,9 @@ public class kNN implements Classifier {
 		}
 
 		// pq returns worst index first; store backwards in indices
-		for (int i = kNNindices.length - 1; i >= 0; i--)
+		for (int i = kNNindices.length - 1; i >= 0; i--) {
 			kNNindices[i] = pq.remove();
+		}
 		return kNNindices;
 	}
 
@@ -393,7 +399,6 @@ public class kNN implements Classifier {
 			else
 				vote_0 += this.instanceWeights[index];
 		}
-
 		return (vote_1 > vote_0) ? 1 : 0;
 	}
 
