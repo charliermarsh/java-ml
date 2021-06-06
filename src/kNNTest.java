@@ -25,7 +25,7 @@ public class kNNTest {
 
 	/*
 	 * Purpose: Calculates the distance between two vectors 
-	 * Input: getDistance get distance between {1,0,0,1} and {1,0,1,0} 
+	 * Input: getDistance Get distance between {1,0,0,1} and {1,0,1,0} 
 	 * Expected: 
 	 * 		return 2
 	 */
@@ -49,5 +49,33 @@ public class kNNTest {
 		assertEquals(distance, 2, 0.00001);
 	}
 
+	/*
+	 * Purpose: Test for calcError(), a method that calculates the error of the predicted value.
+	 * Input: calcError Calculates the error over a labeled data set(knn_test_dna.train) using 1-nearest indices(kNNindices) 
+	 * Expected: 
+	 * 		return 0
+	 */
+	@Test
+	public void testCalcError() throws Exception {
+		DataSetInput input = new FileInput("./data/knn_test_dna");
+		DataSet dataset = new BinaryDataSet(input);
+		Strategy strategy = new Strategy(new EuclideanDistance(), new kFoldCrossValidation());
+		kNN knn = new kNN(dataset, strategy);
+		
+		Method method = knn.getClass().getDeclaredMethod("calcError", int[][].class);
+		method.setAccessible(true);
+		
+		double[] instanceWeights = new double[10];
+		for (int i = 0; i < instanceWeights.length; i++)
+			instanceWeights[i] = 1.0;
+		
+		knn.setInstanceWeights(instanceWeights);
+		
+		int[][] kNNindices = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9} };
+		double error = (double) method.invoke(knn, (Object)kNNindices);
+		assertEquals(error, 0, 0.00001);
+	}
+	
+	
 
 }
