@@ -102,6 +102,32 @@ public class kNNTest {
 		}
 	}
 	
+	/*
+	 * Purpose: Test for voteCount, a method that counts up the votes for the training examples with labels at indices listed
+	 * Input: voteCount Calculate predicted values ​​through indices
+	 * Expected:
+	 * 		return 1
+	 */
+	@Test
+	public void testVoteCount() throws Exception {
+		DataSetInput input = new FileInput("./data/knn_test_dna");
+		DataSet dataset = new BinaryDataSet(input);
+		Strategy strategy = new Strategy(new EuclideanDistance(), new kFoldCrossValidation());
+		kNN knn = new kNN(dataset, strategy);
+		
+		Method method = knn.getClass().getDeclaredMethod("voteCount", int[].class);
+		method.setAccessible(true);
+		
+		double[] instanceWeights = new double[10];
+		for (int i = 0; i < instanceWeights.length; i++)
+			instanceWeights[i] = 1.0;
+		
+		knn.setInstanceWeights(instanceWeights);
+		knn.setkOpt(3);
+		
+		int[] indices = {0, 1, 2};
+		int vote = (int)method.invoke(knn, indices);
+		assertEquals(vote, 1);
+	}
 	
-
 }
