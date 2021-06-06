@@ -9,8 +9,8 @@ public class kNNTest {
 	 * Purpose: Test knn class member variable initialization in knn constructor
 	 * Input: kNN Create kNN object 
 	 * Expected: 
-	 * 		getDataSet() == dataset 
-	 * 		getStrategy() == strategy
+	 * 		dataset = getDataSet()
+	 * 		strategy = getStrategy()
 	 */
 	@Test
 	public void testkNN() throws Exception {
@@ -74,6 +74,32 @@ public class kNNTest {
 		int[][] kNNindices = { {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9} };
 		double error = (double) method.invoke(knn, (Object)kNNindices);
 		assertEquals(error, 0, 0.00001);
+	}
+	
+	/*
+	 * Purpose: Test for kNearest(), a method that calculates the indices of the k nearest training examples in data set 
+	 * Input: kNearest Calculate the two indices closest to the dna sequence 'GGGGGG'
+	 * Expected:
+	 * 		return {0, 1}
+	 */
+	@Test
+	public void testkNearest() throws Exception {
+		DataSetInput input = new FileInput("./data/knn_test_dna");
+		DataSet dataset = new BinaryDataSet(input);
+		Strategy strategy = new Strategy(new EuclideanDistance(), new kFoldCrossValidation());
+		kNN knn = new kNN(dataset, strategy);
+		
+		Method method = knn.getClass().getDeclaredMethod("kNearest", int.class, int[].class);
+		method.setAccessible(true);
+		
+		int[] ex = {0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0}; // G G G G G G
+		int k = 2;
+		
+		int[] kNNindices = (int[])method.invoke(knn, k,  ex);
+		int[] answer = {0, 1};
+		for(int i = 0; i < k; i++) {
+			assertEquals(kNNindices[i], answer[i]);
+		}
 	}
 	
 	
