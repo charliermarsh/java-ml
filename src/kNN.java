@@ -63,6 +63,10 @@ public class kNN implements Classifier {
 	public void setInstanceWeights(double[] instanceWeights) {
 		this.instanceWeights = instanceWeights;
 	}
+	
+	public void setkOpt(int kOpt) {
+		this.kOpt = kOpt;
+	}
 	/**
 	 * Constructor for the kNN machine learning algorithm. Takes as argument a data
 	 * set. From then on, examples in the data set can be fed to predict() in return
