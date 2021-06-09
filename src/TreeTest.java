@@ -300,4 +300,36 @@ public class TreeTest {
         assertEquals((100*correct / crossEx.length),100);
 
     }
+	
+		/**
+	* Purpose:test DecisionForest using a tree with a prediction ratio of 100%.
+	* Input: DecisionForest Create DecisionForest
+	* Expected:
+	* 			No, No, No, No, No, No,
+				No, Yes, Yes, Yes, Yes,
+				Yes, Yes, Yes, Yes, No,
+				No, No, No, No, No, Yes,
+				Yes, Yes, Yes, Yes, Yes
+				in testTreedata.testout
+	*/
+	@Test
+	public void testDecisionForest() throws Exception {
+
+
+        String filestem = "data/testTreedata";
+
+        /*
+         * Create a cross validation set - just takes the last crossSize
+         * elements of the set as a cross set.
+         */
+        DiscreteDataSet d = new DiscreteDataSet(filestem);
+
+        System.out.println("Training classifier on " + d.numTrainExs
+                + " examples");
+
+        Classifier c = new DecisionForest(d,5);
+
+        System.out.println("Running on test set...");
+        d.printTestPredictions(c, filestem);
+	}
 }
