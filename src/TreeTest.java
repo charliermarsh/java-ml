@@ -230,7 +230,7 @@ public class TreeTest {
         d.trainLabel = dLabel;
 
 
-        Classifier c = new Adaboost(d,5) ;
+        Classifier c = new Adaboost(d,3) ;
 
         int correct = 0;
         for (int ex = 0; ex < crossEx.length; ex++) {
