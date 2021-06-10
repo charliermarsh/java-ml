@@ -17,5 +17,18 @@ class SigmoidTest {
 		System.out.println(test);
 		assertTrue(result);
 	}
-
+	/**
+	* Purpose: Calculate sigmoid derivation function
+	* Input: getDerivation (2.0) 
+	* Expected:
+	* return Succcess
+	*/
+	@Test
+	void test_getDerivation() {
+		Sigmoid sigmoid = new Sigmoid();
+		double test = sigmoid.getDerivation(2.0);
+		boolean result = (0.10499358540350 < test) && (test < 0.10499358540351) ;
+		System.out.println(test);
+		assertTrue(result);
+	}
 }
