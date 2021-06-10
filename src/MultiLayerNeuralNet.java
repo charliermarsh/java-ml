@@ -73,6 +73,12 @@ public class MultiLayerNeuralNet implements Classifier {
 	}
 
 	public int getIdx(int layerNum, int nodeNum) {
+		if(layerNum < 0 || layerNum >= this.layer.length) {
+			return -1;
+		}
+		if(nodeNum < 0 || nodeNum >= this.layer[ layerNum ].getNumNodes()) {
+			return -1;
+		}
 		int idx = 0;
 		for(int l=1; l<=layerNum; l++) {
 			idx += this.layer[l-1].getNumNodes();
