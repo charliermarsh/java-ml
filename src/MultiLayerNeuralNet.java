@@ -18,7 +18,7 @@ public class MultiLayerNeuralNet implements Classifier {
 	
 	/** Calculates the error on the training examples of
 	 * data set d. */
-	private double error(DataSet d) {
+	public double error(DataSet d) {
 		if (d.numTrainExs == 0) return 0.0;
 		double sum = 0.0;
 		for (int i = 0; i < d.numTrainExs; i++)
@@ -151,12 +151,12 @@ public class MultiLayerNeuralNet implements Classifier {
 		int numHidden = this.N;
 		int numInput = this.N;
 		int numOutput = 1;
-		System.out.println(numInput);
-		System.out.println(numHidden);
-		System.out.println(numOutput);
-		for(String attr : this.dataset.attrName) {
-			System.out.println(attr);
-		}
+//		System.out.println(numInput);
+//		System.out.println(numHidden);
+//		System.out.println(numOutput);
+//		for(String attr : this.dataset.attrName) {
+//			System.out.println(attr);
+//		}
 		this.numNodes = numInput + numHidden + numOutput;
 		// number of layers to be included
 		int numLayers = 3;
@@ -188,6 +188,8 @@ public class MultiLayerNeuralNet implements Classifier {
 			// run back prop
 			backPropagation(this.dataset, prevDelta);
 			double error = error(this.dataset);
+//			System.out.print("error: ");
+//			System.out.println(error);
 			// if error is sufficiently low, cut-off
 			if (error < epsilon) {
 				for(int l=0; l<this.layer.length; l++)
