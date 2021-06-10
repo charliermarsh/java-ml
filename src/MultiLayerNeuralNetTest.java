@@ -1,12 +1,40 @@
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class MultiLayerNeuralNetTest {
-
+	public MultiLayerNeuralNet c;
+	@BeforeEach
+	void createMultiLayerNueralNet() throws Exception{
+    	String filestem = "data/lnn_test_census";
+    	DataSetInput input = new FileInput(filestem);
+    	DataSet d = new BinaryDataSet(input);
+    	Activation a = new Sigmoid();
+    	
+    	c = new MultiLayerNeuralNet(d, a);
+		
+	}
+	/**
+	* Purpose: Valid range of getIndex function
+	* Input: getIndex (0,0),(0,N_i),(1,0),(1,N_h),(2,0),(2,N_o)
+	* Expected:
+	* return Succcess
+	*/
 	@Test
-	void test() {
-		fail("Not yet implemented");
+	void test_getIdx_Valid(){
+		int inputLayerSize = c.getLayerSize(0);
+		int hiddenLayerSize = c.getLayerSize(1);
+		int outputLayerSize = c.getLayerSize(2);
+		
+		assertEquals(c.getIdx(0,0), 0);
+		assertEquals(c.getIdx(0,inputLayerSize-1), inputLayerSize-1);
+
+		assertEquals(c.getIdx(1,0), inputLayerSize);
+		assertEquals(c.getIdx(1,hiddenLayerSize-1), inputLayerSize + hiddenLayerSize - 1);
+		
+		assertEquals(c.getIdx(2,0), inputLayerSize + hiddenLayerSize);
+		assertEquals(c.getIdx(2,outputLayerSize-1), inputLayerSize + hiddenLayerSize + outputLayerSize - 1);
 	}
 
 }
