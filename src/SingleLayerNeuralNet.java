@@ -43,7 +43,7 @@ public class SingleLayerNeuralNet implements Classifier {
 		// N+1 perceptrons, with perceptron N = output
 		this.weights = new double[this.N];
 		double epsilon = 0.05;
-		int maxRuns = 100000;
+		int maxRuns = 10;
 		
 		train(epsilon, maxRuns);
 	}
