@@ -18,7 +18,7 @@ public class MultiLayerNeuralNet implements Classifier {
 	
 	/** Calculates the error on the training examples of
 	 * data set d. */
-	private double error(DataSet d) {
+	public double error(DataSet d) {
 		if (d.numTrainExs == 0) return 0.0;
 		double sum = 0.0;
 		for (int i = 0; i < d.numTrainExs; i++)
@@ -72,7 +72,13 @@ public class MultiLayerNeuralNet implements Classifier {
 		adjustWeights(output, delta);
 	}
 
-	private int getIdx(int layerNum, int nodeNum) {
+	public int getIdx(int layerNum, int nodeNum) {
+		if(layerNum < 0 || layerNum >= this.layer.length) {
+			return -1;
+		}
+		if(nodeNum < 0 || nodeNum >= this.layer[ layerNum ].getNumNodes()) {
+			return -1;
+		}
 		int idx = 0;
 		for(int l=1; l<=layerNum; l++) {
 			idx += this.layer[l-1].getNumNodes();
@@ -81,6 +87,9 @@ public class MultiLayerNeuralNet implements Classifier {
 		
 		return idx;
 	}
+    public int getLayerSize(int layerNum) {
+    	return this.layer[layerNum].getNumNodes();
+    }
 	/** adjust weights
 	 */
 	private void adjustWeights(double[] output, double[] delta) {
@@ -117,6 +126,7 @@ public class MultiLayerNeuralNet implements Classifier {
 	/** compute outputs by propagating inputs forward
 	 */
 	private void forwardPass(double[] output, double[] input) {
+		
 		for (int l = 1; l < this.layer.length; l++) {
 			for (int dest = 0; dest < this.layer[l].getNumNodes(); dest++) {
 				for (int src : this.layer[l].getIncomingEdges(dest)) {
@@ -128,7 +138,6 @@ public class MultiLayerNeuralNet implements Classifier {
 			}
 		}
 	}
-
 	/** Constructor for the MultiLayerNeuralNet class that 
 	 * creates a multi-layer, feed-forward neural network 
 	 * from a data set.
@@ -136,12 +145,18 @@ public class MultiLayerNeuralNet implements Classifier {
 	@SuppressWarnings("unchecked")
 	public MultiLayerNeuralNet(DataSet d, Activation a) {		
 		this.dataset = d;
-		this.N = this.dataset.numAttrs;
+		this.N = this.dataset.numAttrs; // AttributeNameReader.afterRead() -> numAttr = attribute.size()
 		this.activation = a;
 		// number of nodes in hidden layer
 		int numHidden = this.N;
 		int numInput = this.N;
 		int numOutput = 1;
+//		System.out.println(numInput);
+//		System.out.println(numHidden);
+//		System.out.println(numOutput);
+//		for(String attr : this.dataset.attrName) {
+//			System.out.println(attr);
+//		}
 		this.numNodes = numInput + numHidden + numOutput;
 		// number of layers to be included
 		int numLayers = 3;
@@ -173,6 +188,8 @@ public class MultiLayerNeuralNet implements Classifier {
 			// run back prop
 			backPropagation(this.dataset, prevDelta);
 			double error = error(this.dataset);
+//			System.out.print("error: ");
+//			System.out.println(error);
 			// if error is sufficiently low, cut-off
 			if (error < epsilon) {
 				for(int l=0; l<this.layer.length; l++)
@@ -226,7 +243,6 @@ public class MultiLayerNeuralNet implements Classifier {
     	// Return based on output of sigmoid function
     	return predict(output[this.numNodes - 1]);
     }
-    
     /** Makes a prediction based on some input value a, which
      * should--in practice--be the output value of the final
      * perceptron.

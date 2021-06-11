@@ -1,0 +1,8 @@
+>50K  <=50K
+
+age		numeric
+education-num	numeric
+sex		Female  Male
+capital-gain	numeric
+capital-loss	numeric
+hours-per-week	numeric
